@@ -1,6 +1,5 @@
 # TraitEngine   <!-- badges -->  
 [![Gem Version](https://badge.fury.io/rb/trait_engine.svg)](https://rubygems.org/gems/trait_engine)  
-[![CI](https://github.com/amuta/trait-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/amuta/trait-engine/actions)
 
 **Declarative, trait-driven attribute mapping for Ruby**  
 Drop hundreds of ad-hoc `if`/`case` branches. Define your business rules as a simple graph of **5 primitives**, then compile and execute them against any context. Ask “why did I get this value?” and receive a full JSON decision trace.
