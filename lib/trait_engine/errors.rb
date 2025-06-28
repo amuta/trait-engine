@@ -20,4 +20,5 @@ module TraitEngine
   # ---------- runtime ------------------------------------------------
   class UnknownFunctionError   < Error; end
   class CycleError             < Error; end
+  class RegistryFrozenError    < Error; end
 end

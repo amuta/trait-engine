@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "pry"
+require "trait_engine/errors"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

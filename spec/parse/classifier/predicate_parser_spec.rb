@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-require "trait_engine"
+require "trait_engine/parse/lexer/scalar_lexer"
+require "trait_engine/parse/classifier/predicate_parser"
 
 Lexer  = TraitEngine::Parse::Lexer::ScalarLexer
-Parser = TraitEngine::Classify::PredicateParser
+Parser = TraitEngine::Parse::Classifier::PredicateParser
 
 RSpec.describe Parser do
   def parse(str)
