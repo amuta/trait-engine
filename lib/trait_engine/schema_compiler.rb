@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# # frozen_string_literal: true
 require_relative "schema"
 require_relative "decision_table"
 require_relative "trait"
