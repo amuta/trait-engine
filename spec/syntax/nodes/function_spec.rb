@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "trait_engine"
+require "trait_engine/syntax/nodes/function"
 
-RSpec.describe TraitEngine::AST::FunctionNode do
-  let(:loc)  { TraitEngine::AST::Location.new(file: "f.rb", line: 5, column: 1) }
+RSpec.describe TraitEngine::Syntax::Nodes::Function do
+  let(:loc) { double("Location", to_h: { start_line: 1, end_line: 2 }) }
   let(:args) { [{ type: :literal, value: "X" }] }
   subject(:node) do
     described_class.new(

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "trait_engine/core_funcs" if defined?(TraitEngine::CoreFuncs)
+
 module TraitEngine
   # Runtime container for a single compiled rule set.
   #

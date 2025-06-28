@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "trait_engine"
+require "trait_engine/attribute"
 
 RSpec.describe TraitEngine::Attribute do
   let(:lit_hello)   { TraitEngine::Resolvers::Literal.new("HELLO") }

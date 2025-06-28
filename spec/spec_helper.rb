@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "trait_engine"
 require "pry"
 
 RSpec.configure do |config|

@@ -7,8 +7,8 @@ FIXTURE = File.join(__dir__, "..", "fixtures", "complex_schema.yml")
 RSpec.describe TraitEngine::Loaders::YamlLoader do
   subject(:ast) { described_class.load(FIXTURE) }
 
-  it "returns an AST::SchemaNode" do
-    expect(ast).to be_a(TraitEngine::AST::SchemaNode)
+  it "returns an Syntax::Schema" do
+    expect(ast).to be_a(TraitEngine::Syntax::Nodes::Schema)
   end
 
   it "captures all attribute names" do

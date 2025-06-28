@@ -1,5 +1,5 @@
 module TraitEngine
-  module Descriptors
+  module Syntax
     ValueDescriptor = Struct.new(:type, :value, keyword_init: true) do
       def to_h = { type: type, value: value }
     end

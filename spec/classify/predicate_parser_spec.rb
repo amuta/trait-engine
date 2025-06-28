@@ -2,7 +2,7 @@
 
 require "trait_engine"
 
-Lexer  = TraitEngine::Lex::ScalarLexer
+Lexer  = TraitEngine::Parse::Lexer::ScalarLexer
 Parser = TraitEngine::Classify::PredicateParser
 
 RSpec.describe Parser do

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "trait_engine"
+require "trait_engine/syntax/nodes/trait"
 
-RSpec.describe TraitEngine::AST::TraitNode do
-  let(:loc)  { TraitEngine::AST::Location.new(file: "a.rb", line: 10, column: 2) }
+RSpec.describe TraitEngine::Syntax::Nodes::Trait do
+  let(:loc)  { double("Location", to_h: { start_line: 1, end_line: 2 }) }
   let(:pred) { { lhs: {}, op: nil, rhs: {} } }
 
   subject(:node) { described_class.new(name: :foo, predicate_descriptor: pred, loc: loc) }

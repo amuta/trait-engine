@@ -9,7 +9,7 @@ require_relative "registry"
 require_relative "resolvers"
 
 module TraitEngine
-  # Turns an AST::SchemaNode into an executable TraitEngine::Schema
+  # Turns an Syntax::Schema into an executable TraitEngine::Schema
   class SchemaCompiler
     class << self
       # public API

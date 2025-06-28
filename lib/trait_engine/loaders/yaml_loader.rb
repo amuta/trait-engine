@@ -28,7 +28,7 @@ module TraitEngine
       def to_ast
         root_map = mapping_to_hash(@doc.root)
 
-        AST::SchemaNode.new(
+        Syntax::Schema.new(
           traits: build_traits(root_map["traits"]),
           functions: build_functions(root_map["functions"]),
           attributes: build_attributes(root_map["attributes"]),
@@ -43,10 +43,10 @@ module TraitEngine
 
         kv_pairs(node).map do |trait_name_node, mapping_node|
           # mapping_node is a Mapping; pick its first child pair
-          tokens = Lex::ScalarLexer.new(mapping_node.value, file: @file).tokens
+          tokens = Parse::Lexer::ScalarLexer.new(mapping_node.value, file: @file).tokens
           predicate_desc = Classify::PredicateParser.from_tokens(tokens)
 
-          AST::TraitNode.new(
+          Syntax::Nodes::Trait.new(
             name: trait_name_node.value.to_sym,
             predicate_descriptor: predicate_desc,
             loc: loc(trait_name_node)
@@ -65,7 +65,7 @@ module TraitEngine
             parse_resolver(arg_node.value, arg_node)
           end
 
-          AST::FunctionNode.new(
+          Syntax::Function.new(
             name: fn_name_node.value.to_sym,
             method_name: fn_hash["method"].value.to_sym,
             arg_descriptors: args,
@@ -82,21 +82,21 @@ module TraitEngine
                     value_node.children.map do |decision_node|
                       trait_syms = decision_node.children[1].children.map { |trait_node| trait_node.value.to_sym }
                       resolver_node = decision_node.children[3] # resolver node is always the 4th
-                      AST::ConditionalCaseNode.new(
+                      Syntax::ConditionalCase.new(
                         trait_names: trait_syms,
                         resolver_descriptor: parse_resolver(resolver_node.value, resolver_node),
                         loc: loc(decision_node)
                       )
                     end
                   else
-                    [AST::ConditionalCaseNode.new(
+                    [Syntax::ConditionalCase.new(
                       trait_names: [],
                       resolver_descriptor: parse_resolver(value_node.value, value_node),
                       loc: loc(value_node)
                     )]
                   end
 
-          AST::AttributeNode.new(
+          Syntax::Attribute.new(
             name: attr_name_node.value.to_sym,
             cases: cases,
             loc: loc(attr_name_node)
@@ -107,7 +107,8 @@ module TraitEngine
       # -------------- helpers ---------------------------------
 
       def parse_resolver(raw, node)
-        tokens = Lex::ScalarLexer.new(raw, file: @file, line: node.start_line + 1, col: node.start_column).tokens
+        tokens = Parse::Lexer::ScalarLexer.new(raw, file: @file, line: node.start_line + 1,
+                                                    col: node.start_column).tokens
         Classify::ResolverClassifier.from_tokens(tokens)
       rescue TraitEngine::ValidationError => e
         e.loc ||= loc(node)
@@ -126,7 +127,7 @@ module TraitEngine
       end
 
       def loc(node)
-        AST::Location.new(
+        Syntax::Location.new(
           file: @file,
           line: node.start_line + 1,
           column: node.start_column

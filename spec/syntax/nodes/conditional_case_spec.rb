@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "trait_engine"
+require "trait_engine/syntax/nodes/conditional_case"
 
-RSpec.describe TraitEngine::AST::ConditionalCaseNode do
-  let(:loc)   { TraitEngine::AST::Location.new(file: "c.yml", line: 3, column: 4) }
+RSpec.describe TraitEngine::Syntax::Nodes::ConditionalCase do
+  let(:loc) { double("Location", to_h: { start_line: 1, end_line: 2 }) }
   let(:desc)  { { type: :literal, value: "V" } }
   subject(:node) do
     described_class.new(trait_names: %i[a b], resolver_descriptor: desc, loc: loc)
