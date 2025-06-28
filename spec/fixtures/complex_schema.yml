@@ -1,0 +1,19 @@
+traits:
+  gold_tier:   attribute:tier == gold
+  eu_region:   attribute:region == EU
+  high_value:  field:order_total_cents > 10000
+
+functions:
+  promo_gold_eu:
+    method: concatenate
+    arguments: [ attribute:login, literal:_GE ]
+
+attributes:
+  login:  "field:login"
+  tier:   "field:tier"
+  region: "field:region"
+  promo_code:
+    - traits: [gold_tier, eu_region]
+      resolver: "function:promo_gold_eu"
+    - traits: []
+      resolver: "literal:WELCOME"

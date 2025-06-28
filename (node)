@@ -1,0 +1,39 @@
+=> [[32m#<Psych::Nodes::Mapping:0x0000716551204748[0m
+  @anchor[32m=[0m[1;36mnil[0m,
+  @children[32m=[0m
+   [[32m#<Psych::Nodes::Scalar:0x00007165512046a8[0m @anchor[32m=[0m[1;36mnil[0m, @end_column[32m=[0m[1;34m12[0m, @end_line[32m=[0m[1;34m15[0m, @plain[32m=[0m[1;36mtrue[0m, @quoted[32m=[0m[1;36mfalse[0m, @start_column[32m=[0m[1;34m6[0m, @start_line[32m=[0m[1;34m15[0m, @style[32m=[0m[1;34m1[0m, @tag[32m=[0m[1;36mnil[0m, @value[32m=[0m[31m[1;31m"[0m[31mtraits[1;31m"[0m[31m[0m[32m>[0m,
+    [32m#<Psych::Nodes::Sequence:0x0000716551204568[0m
+     @anchor[32m=[0m[1;36mnil[0m,
+     @children[32m=[0m
+      [[32m#<Psych::Nodes::Scalar:0x00007165512044c8[0m @anchor[32m=[0m[1;36mnil[0m, @end_column[32m=[0m[1;34m24[0m, @end_line[32m=[0m[1;34m15[0m, @plain[32m=[0m[1;36mtrue[0m, @quoted[32m=[0m[1;36mfalse[0m, @start_column[32m=[0m[1;34m15[0m, @start_line[32m=[0m[1;34m15[0m, @style[32m=[0m[1;34m1[0m, @tag[32m=[0m[1;36mnil[0m, @value[32m=[0m[31m[1;31m"[0m[31mgold_tier[1;31m"[0m[31m[0m[32m>[0m,
+       [32m#<Psych::Nodes::Scalar:0x0000716551204428[0m @anchor[32m=[0m[1;36mnil[0m, @end_column[32m=[0m[1;34m35[0m, @end_line[32m=[0m[1;34m15[0m, @plain[32m=[0m[1;36mtrue[0m, @quoted[32m=[0m[1;36mfalse[0m, @start_column[32m=[0m[1;34m26[0m, @start_line[32m=[0m[1;34m15[0m, @style[32m=[0m[1;34m1[0m, @tag[32m=[0m[1;36mnil[0m, @value[32m=[0m[31m[1;31m"[0m[31meu_region[1;31m"[0m[31m[0m[32m>[0m],
+     @end_column[32m=[0m[1;34m36[0m,
+     @end_line[32m=[0m[1;34m15[0m,
+     @implicit[32m=[0m[1;36mtrue[0m,
+     @start_column[32m=[0m[1;34m14[0m,
+     @start_line[32m=[0m[1;34m15[0m,
+     @style[32m=[0m[1;34m2[0m,
+     @tag[32m=[0m[1;36mnil[0m[32m>[0m,
+    [32m#<Psych::Nodes::Scalar:0x00007165512041a8[0m @anchor[32m=[0m[1;36mnil[0m, @end_column[32m=[0m[1;34m12[0m, @end_line[32m=[0m[1;34m16[0m, @plain[32m=[0m[1;36mtrue[0m, @quoted[32m=[0m[1;36mfalse[0m, @start_column[32m=[0m[1;34m6[0m, @start_line[32m=[0m[1;34m16[0m, @style[32m=[0m[1;34m1[0m, @tag[32m=[0m[1;36mnil[0m, @value[32m=[0m[31m[1;31m"[0m[31morigin[1;31m"[0m[31m[0m[32m>[0m,
+    [32m#<Psych::Nodes::Scalar:0x0000716551204108[0m @anchor[32m=[0m[1;36mnil[0m, @end_column[32m=[0m[1;34m38[0m, @end_line[32m=[0m[1;34m16[0m, @plain[32m=[0m[1;36mfalse[0m, @quoted[32m=[0m[1;36mtrue[0m, @start_column[32m=[0m[1;34m14[0m, @start_line[32m=[0m[1;34m16[0m, @style[32m=[0m[1;34m3[0m, @tag[32m=[0m[1;36mnil[0m, @value[32m=[0m[31m[1;31m"[0m[31mfunction:promo_gold_eu[1;31m"[0m[31m[0m[32m>[0m],
+  @end_column[32m=[0m[1;34m4[0m,
+  @end_line[32m=[0m[1;34m17[0m,
+  @implicit[32m=[0m[1;36mtrue[0m,
+  @start_column[32m=[0m[1;34m6[0m,
+  @start_line[32m=[0m[1;34m15[0m,
+  @style[32m=[0m[1;34m1[0m,
+  @tag[32m=[0m[1;36mnil[0m[32m>[0m,
+ [32m#<Psych::Nodes::Mapping:0x0000716551204068[0m
+  @anchor[32m=[0m[1;36mnil[0m,
+  @children[32m=[0m
+   [[32m#<Psych::Nodes::Scalar:0x0000716551203a28[0m @anchor[32m=[0m[1;36mnil[0m, @end_column[32m=[0m[1;34m12[0m, @end_line[32m=[0m[1;34m17[0m, @plain[32m=[0m[1;36mtrue[0m, @quoted[32m=[0m[1;36mfalse[0m, @start_column[32m=[0m[1;34m6[0m, @start_line[32m=[0m[1;34m17[0m, @style[32m=[0m[1;34m1[0m, @tag[32m=[0m[1;36mnil[0m, @value[32m=[0m[31m[1;31m"[0m[31mtraits[1;31m"[0m[31m[0m[32m>[0m,
+    [32m#<Psych::Nodes::Sequence:0x0000716551203988[0m @anchor[32m=[0m[1;36mnil[0m, @children[32m=[0m[], @end_column[32m=[0m[1;34m16[0m, @end_line[32m=[0m[1;34m17[0m, @implicit[32m=[0m[1;36mtrue[0m, @start_column[32m=[0m[1;34m14[0m, @start_line[32m=[0m[1;34m17[0m, @style[32m=[0m[1;34m2[0m, @tag[32m=[0m[1;36mnil[0m[32m>[0m,
+    [32m#<Psych::Nodes::Scalar:0x00007165512038e8[0m @anchor[32m=[0m[1;36mnil[0m, @end_column[32m=[0m[1;34m12[0m, @end_line[32m=[0m[1;34m18[0m, @plain[32m=[0m[1;36mtrue[0m, @quoted[32m=[0m[1;36mfalse[0m, @start_column[32m=[0m[1;34m6[0m, @start_line[32m=[0m[1;34m18[0m, @style[32m=[0m[1;34m1[0m, @tag[32m=[0m[1;36mnil[0m, @value[32m=[0m[31m[1;31m"[0m[31morigin[1;31m"[0m[31m[0m[32m>[0m,
+    [32m#<Psych::Nodes::Scalar:0x0000716551203848[0m @anchor[32m=[0m[1;36mnil[0m, @end_column[32m=[0m[1;34m31[0m, @end_line[32m=[0m[1;34m18[0m, @plain[32m=[0m[1;36mfalse[0m, @quoted[32m=[0m[1;36mtrue[0m, @start_column[32m=[0m[1;34m14[0m, @start_line[32m=[0m[1;34m18[0m, @style[32m=[0m[1;34m3[0m, @tag[32m=[0m[1;36mnil[0m, @value[32m=[0m[31m[1;31m"[0m[31mliteral:WELCOME[1;31m"[0m[31m[0m[32m>[0m],
+  @end_column[32m=[0m[1;34m0[0m,
+  @end_line[32m=[0m[1;34m19[0m,
+  @implicit[32m=[0m[1;36mtrue[0m,
+  @start_column[32m=[0m[1;34m6[0m,
+  @start_line[32m=[0m[1;34m17[0m,
+  @style[32m=[0m[1;34m1[0m,
+  @tag[32m=[0m[1;36mnil[0m[32m>[0m]
