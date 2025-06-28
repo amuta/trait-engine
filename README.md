@@ -1,4 +1,3 @@
-````markdown
 # TraitEngine   <!-- badges -->  
 [![Gem Version](https://badge.fury.io/rb/trait_engine.svg)](https://rubygems.org/gems/trait_engine)  
 [![CI](https://github.com/amuta/trait-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/amuta/trait-engine/actions)
@@ -193,5 +192,3 @@ Planned milestones:
 
 MIT © 2025 André Muta
 
-```
-```
