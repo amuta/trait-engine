@@ -3,6 +3,7 @@ require_relative "../syntax/expressions"
 require_relative "../syntax/terminal_expressions"
 require_relative "../syntax/node"
 require "trait_engine/errors"
+require "trait_engine/operator_registry"
 require_relative "dsl_cascade_builder"
 
 module TraitEngine
@@ -52,6 +53,11 @@ module TraitEngine
         raise_error("expects a symbol for an operator, got #{operator.class}", loc) unless operator.is_a?(Symbol)
 
         expr = CallExpression.new(operator, [ensure_syntax(lhs, loc), ensure_syntax(rhs, loc)])
+
+        unless TraitEngine::OperatorRegistry.supported?(operator)
+          raise_error("operator `#{operator}` is not supported", loc)
+        end
+
         node = Trait.new(name, expr)
         node.loc = loc
         @traits << node
@@ -107,7 +113,7 @@ module TraitEngine
       def ensure_syntax(obj, location)
         case obj
         when Integer, String, Symbol, TrueClass, FalseClass then literal(obj)
-        when Array then Listexpr.new(obj.map { |e| ensure_syntax(e, location) })
+        when Array then ListExpression.new(obj.map { |e| ensure_syntax(e, location) })
         when Syntax::Node then obj
         else
           raise_error("Invalid expression: #{obj.inspect}", location)

@@ -19,6 +19,8 @@ module TraitEngine
       end
     end
 
+    class SemanticError < LocatedError; end
+
     class SyntaxError < LocatedError; end
   end
 end

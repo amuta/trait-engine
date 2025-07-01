@@ -182,6 +182,14 @@ RSpec.describe TraitEngine::Parser::Dsl do
           end
         end.to raise_error(error_class, /Invalid expression/)
       end
+
+      it "raises an error for unsupported operators" do
+        expect do
+          build_schema do
+            trait :unsupported, field(:value), :>>, 42
+          end
+        end.to raise_error(error_class, /operator `>>` is not supported/)
+      end
     end
   end
 
