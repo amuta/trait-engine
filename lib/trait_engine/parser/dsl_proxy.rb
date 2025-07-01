@@ -1,6 +1,3 @@
-# lib/trait_engine/parser/dsl_proxy.rb
-require "forwardable"
-
 module TraitEngine
   module Parser
     class DslProxy
