@@ -27,6 +27,13 @@ module TraitEngine
         { arity: entry.arity, types: entry.types }
       end
 
+      def signature(op_sym)
+        entry = @ops[op_sym]
+        raise UnknownOperator, "Operator #{op_sym.inspect} not supported" unless entry
+
+        { arity: entry.arity }
+      end
+
       def supported?(op_sym)
         @ops.key?(op_sym)
       end

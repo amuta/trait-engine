@@ -52,12 +52,9 @@ module TraitEngine
         validate_name(name, :trait, loc)
         raise_error("expects a symbol for an operator, got #{operator.class}", loc) unless operator.is_a?(Symbol)
 
+        raise_error("unsupported operator `#{operator}`", loc) unless TraitEngine::OperatorRegistry.supported?(operator)
+
         expr = CallExpression.new(operator, [ensure_syntax(lhs, loc), ensure_syntax(rhs, loc)])
-
-        unless TraitEngine::OperatorRegistry.supported?(operator)
-          raise_error("operator `#{operator}` is not supported", loc)
-        end
-
         node = Trait.new(name, expr)
         node.loc = loc
         @traits << node

@@ -114,9 +114,16 @@ module TraitEngine
 
     def validate_operators
       @schema.traits.each do |trait|
-        op = trait.expression.fn_name
-        next if TraitEngine::OperatorRegistry.supported?(op)
+        op       = trait.expression.fn_name
+        sig      = TraitEngine::OperatorRegistry.signature(op)
+        expected = sig[:arity]
+        given    = trait.expression.args.size
 
+        if given != expected
+          err(trait.loc,
+              "operator `#{op}` expects #{expected} arguments, got #{given}")
+        end
+      rescue TraitEngine::UnknownOperator
         err(trait.loc, "unsupported operator `#{op}`")
       end
     end
