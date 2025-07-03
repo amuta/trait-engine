@@ -20,25 +20,6 @@ RSpec.describe TraitEngine::Parser::Dsl do
       expect(schema.attributes.first.expression.name).to eq(:first_name)
     end
 
-    it "can define attribute cascades" do
-      schema = build_schema do
-        attribute :status do
-          on_trait :active, field(:active)
-        end
-      end
-
-      attribute = schema.attributes.first
-      expect(attribute).to be_a(TraitEngine::Syntax::Declarations::Attribute)
-      expect(attribute.name).to eq(:status)
-      expect(attribute.expression).to be_a(TraitEngine::Syntax::Expressions::CascadeExpression)
-      expect(attribute.expression.cases.size).to eq(1)
-      cascade_case = attribute.expression.cases.first
-      expect(cascade_case).to be_a(Array)
-      expect(cascade_case.first).to be_a(TraitEngine::Syntax::TerminalExpressions::Binding)
-      expect(cascade_case.first.name).to eq(:active)
-      expect(cascade_case.last).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
-    end
-
     it "can define traits" do
       schema = build_schema do
         trait :vip, field(:status), :==, literal("VIP")
@@ -162,6 +143,22 @@ RSpec.describe TraitEngine::Parser::Dsl do
           end
         end.to raise_error(error_class, /expects a symbol for an operator, got String/)
       end
+
+      it "raises an error if the operator is not supported" do
+        expect do
+          build_schema do
+            trait :unsupported, field(:value), :>>, 42
+          end
+        end.to raise_error(error_class, /unsupported operator `>>`/)
+      end
+
+      it "raises an error if a trait has an invalid expression size" do
+        expect do
+          build_schema do
+            trait :invalid_trait, field(:value), :==
+          end
+        end.to raise_error(error_class, /trait 'invalid_trait' requires exactly 3 arguments: lhs, operator, and rhs/)
+      end
     end
 
     context "when defining functions" do
@@ -228,6 +225,96 @@ RSpec.describe TraitEngine::Parser::Dsl do
             /invalid_schema_class\.rb:#{line}: attribute 'name' requires an expression or a block/
           )
         }
+      end
+    end
+  end
+
+  context "syntax validations" do
+    context "attribute" do
+      it "accepts <symbol>, <expression>" do
+        schema = build_schema do
+          attribute :name, field(:first_name)
+        end
+
+        expect(schema.attributes.size).to eq(1)
+        expect(schema.attributes.first.name).to eq(:name)
+        expect(schema.attributes.first.expression).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+      end
+
+      it "accepts <symbol> with a block" do
+        schema = build_schema do
+          attribute :status do
+            on_trait :active, field(:active)
+          end
+        end
+
+        expect(schema.attributes.size).to eq(1)
+        expect(schema.attributes.first.expression).to be_a(TraitEngine::Syntax::Expressions::CascadeExpression)
+        expect(schema.attributes.first.expression.cases.size).to eq(1)
+        cases = schema.attributes.first.expression.cases
+        expect(cases.size).to eq(1)
+        expect(cases.first).to be_a(TraitEngine::Syntax::Expressions::WhenCaseExpression)
+        expect(cases.first.condition).to be_a(TraitEngine::Syntax::Expressions::CallExpression)
+        expect(cases.first.condition.fn_name).to eq(:all?)
+        expect(cases.first.condition.args.size).to eq(1)
+        expect(cases.first.condition.args.first).to be_a(TraitEngine::Syntax::Expressions::ListExpression)
+        expect(cases.first.condition.args.first.elements.size).to eq(1)
+        expect(cases.first.condition.args.first.elements.first).to be_a(TraitEngine::Syntax::TerminalExpressions::Binding)
+        expect(cases.first.condition.args.first.elements.first.name).to eq(:active)
+        expect(cases.first.result).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+        expect(cases.first.result.name).to eq(:active)
+      end
+
+      context "cascade cases" do
+        let(:schema) do
+          build_schema do
+            attribute :status do
+              on_trait :active, field(:active)
+              on_traits :verified, field(:verified)
+              default field(:default_status)
+            end
+          end
+        end
+        let(:attribute_expr) { schema.attributes.first.expression }
+        let(:first_case) { attribute_expr.cases[0] }
+        let(:second_case) { attribute_expr.cases[1] }
+        let(:default_case) { attribute_expr.cases[2] }
+
+        it "creates a cascade expression with cases: whencases" do
+          expect(attribute_expr).to be_a(TraitEngine::Syntax::Expressions::CascadeExpression)
+          expect(attribute_expr.cases.size).to eq(3)
+        end
+
+        it "creates the first case with a condition and result" do
+          expect(first_case.condition).to be_a(TraitEngine::Syntax::Expressions::CallExpression)
+          expect(first_case.condition.fn_name).to eq(:all?)
+          expect(first_case.condition.args.size).to eq(1)
+          expect(first_case.condition.args.first).to be_a(TraitEngine::Syntax::Expressions::ListExpression)
+          expect(first_case.condition.args.first.elements.size).to eq(1)
+          expect(first_case.condition.args.first.elements.first).to be_a(TraitEngine::Syntax::TerminalExpressions::Binding)
+          expect(first_case.condition.args.first.elements.first.name).to eq(:active)
+          expect(first_case.result).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+          expect(first_case.result.name).to eq(:active)
+        end
+
+        it "creates the second case with a condition and result" do
+          expect(second_case.condition).to be_a(TraitEngine::Syntax::Expressions::CallExpression)
+          expect(second_case.condition.fn_name).to eq(:all?)
+          expect(second_case.condition.args.size).to eq(1)
+          expect(second_case.condition.args.first).to be_a(TraitEngine::Syntax::Expressions::ListExpression)
+          expect(second_case.condition.args.first.elements.size).to eq(1)
+          expect(second_case.condition.args.first.elements.first).to be_a(TraitEngine::Syntax::TerminalExpressions::Binding)
+          expect(second_case.condition.args.first.elements.first.name).to eq(:verified)
+          expect(second_case.result).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+          expect(second_case.result.name).to eq(:verified)
+        end
+
+        it "creates the default case with a condition and result" do
+          expect(default_case.condition).to be_a(TraitEngine::Syntax::TerminalExpressions::Literal)
+          expect(default_case.condition.value).to eq(true) # Always matches
+          expect(default_case.result).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+          expect(default_case.result.name).to eq(:default_status)
+        end
       end
     end
   end

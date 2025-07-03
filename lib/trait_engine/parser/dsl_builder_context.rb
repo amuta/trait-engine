@@ -37,7 +37,7 @@ module TraitEngine
 
         expr =
           if blk
-            build_cascade(name, loc, &blk)
+            build_cascade(loc, &blk)
           else
             ensure_syntax(expr, loc)
           end
@@ -47,7 +47,14 @@ module TraitEngine
         @attributes << node
       end
 
-      def trait(name, lhs, operator, rhs)
+      def trait(name, *expression)
+        unless expression.size == 3
+          raise_error("trait '#{name}' requires exactly 3 arguments: lhs, operator, and rhs",
+                      current_location)
+        end
+
+        lhs, operator, rhs = expression
+
         loc = current_location
         validate_name(name, :trait, loc)
         raise_error("expects a symbol for an operator, got #{operator.class}", loc) unless operator.is_a?(Symbol)
@@ -125,11 +132,11 @@ module TraitEngine
         raise Errors::SyntaxError, "at #{location.file}:#{location.line}: #{message}"
       end
 
-      def build_cascade(name, loc, &blk)
-        cascade_builder = DslCascadeBuilder.new(self)
+      def build_cascade(loc, &blk)
+        cascade_builder = DslCascadeBuilder.new(self, loc)
         cascade_builder.instance_eval(&blk)
 
-        expr = CascadeExpression.new(cascade_builder.cases, cascade_builder.default)
+        expr = CascadeExpression.new(cascade_builder.cases)
         expr.loc = loc
 
         expr
