@@ -19,10 +19,10 @@ module TraitEngine
       end
     end
 
-    class RuntimeError < LocatedError; end
-
     class SemanticError < LocatedError; end
 
     class SyntaxError < LocatedError; end
+
+    class RuntimeError < RuntimeError; end
   end
 end

@@ -109,6 +109,7 @@ module TraitEngine
       expected = sig[:arity]
       given = call_node.args.size
 
+      return if expected.negative? # means fn(*args), no arity check
       return unless given != expected
 
       err(call_node.loc,

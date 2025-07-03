@@ -21,6 +21,10 @@ module TraitEngine
       ListExpression = Struct.new(:elements) do
         include Node
         def children = elements
+
+        def size
+          elements.size
+        end
       end
     end
   end

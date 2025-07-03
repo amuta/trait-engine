@@ -248,7 +248,6 @@ RSpec.describe TraitEngine::Linker do
 
       expect do
         described_class.link!(schema)
-        binding.pry
       end.to raise_error(TraitEngine::Errors::SemanticError,
                          /unsupported operator `bogus_op`/)
     end
