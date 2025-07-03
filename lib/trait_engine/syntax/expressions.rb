@@ -8,9 +8,14 @@ module TraitEngine
         def children = args
       end
 
-      CascadeExpression = Struct.new(:cases, :default) do
+      CascadeExpression = Struct.new(:cases) do
         include Node
-        def children = cases.flat_map(&:flatten) + [default].compact
+        def children = cases
+      end
+
+      WhenCaseExpression = Struct.new(:condition, :result) do
+        include Node
+        def children = condition.children + result.children
       end
 
       ListExpression = Struct.new(:elements) do
