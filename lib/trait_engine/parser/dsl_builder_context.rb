@@ -3,7 +3,7 @@ require_relative "../syntax/expressions"
 require_relative "../syntax/terminal_expressions"
 require_relative "../syntax/node"
 require "trait_engine/errors"
-require "trait_engine/operator_registry"
+require "trait_engine/method_call_registry"
 require_relative "dsl_cascade_builder"
 
 module TraitEngine
@@ -59,9 +59,10 @@ module TraitEngine
         validate_name(name, :trait, loc)
         raise_error("expects a symbol for an operator, got #{operator.class}", loc) unless operator.is_a?(Symbol)
 
-        raise_error("unsupported operator `#{operator}`", loc) unless TraitEngine::OperatorRegistry.supported?(operator)
+        raise_error("unsupported operator `#{operator}`", loc) unless MethodCallRegistry.operator?(operator)
 
         expr = CallExpression.new(operator, [ensure_syntax(lhs, loc), ensure_syntax(rhs, loc)])
+        expr.loc = loc
         node = Trait.new(name, expr)
         node.loc = loc
         @traits << node
@@ -124,9 +125,9 @@ module TraitEngine
         end
       end
 
-      def current_location
-        TraitEngine.current_location
-      end
+      # def current_location
+      #   TraitEngine.current_location
+      # end
 
       def raise_error(message, location)
         raise Errors::SyntaxError, "at #{location.file}:#{location.line}: #{message}"

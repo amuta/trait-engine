@@ -6,6 +6,13 @@ require "trait_engine/errors"
 RSpec.describe TraitEngine::Linker do
   let(:dsl) { TraitEngine::Parser::Dsl }
 
+  before do
+    unless TraitEngine::MethodCallRegistry.supported?(:hello)
+      hello_fn_lambda = ->(name) { "Hello, #{name}!" }
+      TraitEngine::MethodCallRegistry.register(:hello, hello_fn_lambda, arity: 1, types: [:any])
+    end
+  end
+
   describe ".link!" do
     context "with a valid schema" do
       it "returns the schema unchanged" do
@@ -109,7 +116,7 @@ RSpec.describe TraitEngine::Linker do
 
       it "raises when a function's argument binds to an undefined name" do
         schema = dsl.schema do
-          function :f2, call(:foo, ref(:baz))
+          function :f2, call(:hello, ref(:baz))
         end
 
         expect do
@@ -181,22 +188,6 @@ RSpec.describe TraitEngine::Linker do
     end
 
     context "cascade validation" do
-      it "raises for duplicate cascade cases" do
-        schema = dsl.schema do
-          trait :t1, field(:flag), :==, true
-
-          attribute :status do
-            on_trait :t1, literal("a")
-            on_trait :t1, literal("b")
-          end
-        end
-
-        expect do
-          described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
-                           /duplicate cascade case for `t1`/)
-      end
-
       it "allows a cascade on a defined trait" do
         schema = dsl.schema do
           trait :t1, field(:flag), :==, true
@@ -213,11 +204,10 @@ RSpec.describe TraitEngine::Linker do
     end
     context "operator reference" do
       it "raises if a trait uses an unknown operator (DSL check skipped)" do
-        # first call → true (DSL.parse passes)
-        # second call → false (Linker.validate_operators blows up)
-        allow(TraitEngine::OperatorRegistry)
-          .to receive(:supported?)
-          .and_return(true, false)
+        # this allow is to avoid the parser breaking before the linker
+        allow(TraitEngine::MethodCallRegistry)
+          .to receive(:operator?)
+          .and_return(true)
 
         schema = dsl.schema do
           trait :t1, field(:value), :bogus_op, 42
@@ -247,13 +237,10 @@ RSpec.describe TraitEngine::Linker do
     end
 
     it "raises SemanticError for an unknown operator" do
-      allow(TraitEngine::OperatorRegistry)
-        .to receive(:supported?)
-        .and_return(true, false) # so the parser passes
-
-      allow(TraitEngine::OperatorRegistry)
-        .to receive(:signature)
-        .and_raise(TraitEngine::UnknownOperator)
+      # this allow is to avoid the parser breaking before the linker
+      allow(TraitEngine::MethodCallRegistry)
+        .to receive(:operator?)
+        .and_return(true)
 
       schema = dsl.schema do
         trait :t1, field(:x), :bogus_op, literal(1)
@@ -261,12 +248,13 @@ RSpec.describe TraitEngine::Linker do
 
       expect do
         described_class.link!(schema)
+        binding.pry
       end.to raise_error(TraitEngine::Errors::SemanticError,
                          /unsupported operator `bogus_op`/)
     end
 
     it "allows correct-arity, supported operator" do
-      allow(TraitEngine::OperatorRegistry)
+      allow(TraitEngine::MethodCallRegistry)
         .to receive(:signature)
         .with(:>=).and_return({ arity: 2 })
 

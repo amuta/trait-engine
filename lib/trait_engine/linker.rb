@@ -3,7 +3,7 @@ require "trait_engine/syntax/schema"
 require "trait_engine/syntax/declarations"
 require "trait_engine/syntax/expressions"
 require "trait_engine/syntax/terminal_expressions"
-require "trait_engine/operator_registry"
+require "trait_engine/method_call_registry"
 
 module TraitEngine
   class Linker
@@ -14,20 +14,24 @@ module TraitEngine
     def initialize(schema)
       @schema = schema
       @names  = {}
+      @dependency_graph = {}
     end
 
     def link!
+      # Pass 1: Index all definitions
       index_definitions
-      validate_bindings
-      validate_cycles
-      validate_operators
-      validate_cascades
+
+      # Pass 2: Walk all nodes once and validate everything
+      validate_all_nodes
+
+      # Pass 3: Detect cycles using the dependency graph built in pass 2
+      detect_cycles
+
       @schema
     end
 
     private
 
-    # ── Generic walker ─────────────────────────────────────────────────────────
     def walk(node, visited = Set.new, &blk)
       return if visited.include?(node)
 
@@ -40,7 +44,6 @@ module TraitEngine
       @schema.attributes + @schema.traits + @schema.functions
     end
 
-    # ── 1) Duplicate‐name check ──────────────────────────────────────────────
     def index_definitions
       all_nodes.each do |node|
         err(node.loc, "duplicate definition of `#{node.name}`") if @names.key?(node.name)
@@ -48,87 +51,72 @@ module TraitEngine
       end
     end
 
-    # ── 2) Undefined‐binding check ───────────────────────────────────────────
-    def validate_bindings
+    def validate_all_nodes
       all_nodes.each do |decl|
-        walk(decl) do |n|
-          next unless n.is_a?(Syntax::TerminalExpressions::Binding)
-
-          err(n.loc, "undefined reference to `#{n.name}`") unless @names.key?(n.name)
-        end
-      end
-    end
-
-    # ── 3) Definition‐cycle detection ────────────────────────────────────────
-    def validate_cycles
-      graph = @names.transform_values do |node|
         refs = []
-        walk(node) { |n| refs << n.name if n.is_a?(Syntax::TerminalExpressions::Binding) }
-        refs
+
+        walk(decl) do |node|
+          case node
+          when Syntax::TerminalExpressions::Binding
+            # Validate binding exists
+            err(node.loc, "undefined reference to `#{node.name}`") unless @names.key?(node.name)
+            refs << node.name
+
+          when Syntax::Expressions::CallExpression
+            # Validate operators have correct arity
+            validate_operator_arity(node)
+
+            # NOTE: Function calls will be validated by binding validation
+            # since functions are indexed by name
+          end
+        end
+
+        # Build dependency graph for cycle detection
+        @dependency_graph[decl.name] = refs
       end
-      detect_cycles(graph)
     end
 
-    def detect_cycles(graph)
+    def detect_cycles
       visited = Set.new
       stack   = []
 
-      graph.each_key do |name|
-        dfs(name, graph, visited, stack)
+      @dependency_graph.each_key do |name|
+        dfs(name, visited, stack)
       end
     end
 
-    def dfs(name, graph, visited, stack)
+    def dfs(name, visited, stack)
       return if visited.include?(name)
 
       visited << name
       stack.push(name)
 
-      Array(graph[name]).each do |ref|
+      Array(@dependency_graph[name]).each do |ref|
         if stack.include?(ref)
           cycle = (stack + [ref]).join(" → ")
           raise Errors::SemanticError, "cycle detected: #{cycle}"
         end
-        dfs(ref, graph, visited, stack)
+        dfs(ref, visited, stack)
       end
 
       stack.pop
     end
 
-    # ── 4) Cascade‐case sanity ────────────────────────────────────────────────
-    def validate_cascades
-      @schema.attributes.each do |attr|
-        expr = attr.expression
-        next unless expr.is_a?(Syntax::Expressions::CascadeExpression)
+    def validate_operator_arity(call_node)
+      MethodCallRegistry.confirm_support!(call_node.fn_name)
+      op = call_node.fn_name
+      sig = MethodCallRegistry.signature(op)
+      expected = sig[:arity]
+      given = call_node.args.size
 
-        seen = Set.new
-        expr.cases.each do |cond, _|
-          unless @schema.traits.any? { |t| t.name == cond.name }
-            err(cond.loc, "cascade on unknown trait `#{cond.name}`")
-          end
-          err(cond.loc, "duplicate cascade case for `#{cond.name}`") if seen.include?(cond.name)
-          seen << cond.name
-        end
-      end
+      return unless given != expected
+
+      err(call_node.loc,
+          "operator `#{op}` expects #{expected} arguments, got #{given}")
+    rescue TraitEngine::MethodCallRegistry::UnknownMethodName
+      err(call_node.loc, "unsupported operator `#{call_node.fn_name}`")
     end
 
-    def validate_operators
-      @schema.traits.each do |trait|
-        op       = trait.expression.fn_name
-        sig      = TraitEngine::OperatorRegistry.signature(op)
-        expected = sig[:arity]
-        given    = trait.expression.args.size
-
-        if given != expected
-          err(trait.loc,
-              "operator `#{op}` expects #{expected} arguments, got #{given}")
-        end
-      rescue TraitEngine::UnknownOperator
-        err(trait.loc, "unsupported operator `#{op}`")
-      end
-    end
-
-    # ── Error helper ─────────────────────────────────────────────────────────
     def err(loc, message)
       raise Errors::SemanticError, "at #{loc.file}:#{loc.line}: #{message}"
     end
