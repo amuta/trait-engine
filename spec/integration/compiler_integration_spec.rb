@@ -324,7 +324,7 @@ RSpec.describe "TraitEngine Compiler Integration" do
         # Temporarily break a function to test error handling
         expect do
           executable_schema.evaluate(data_with_error_field)
-        end.to raise_error(TraitEngine::Errors::RuntimeError, /Error calling 'error!'/)
+        end.to raise_error(TraitEngine::Errors::RuntimeError, /Error calling fn\(:error!\)/)
       end
 
       it "do not work with objects that do not implement key? method" do

@@ -42,7 +42,7 @@ module TraitEngine
         fn_name = expr.fn_name
         args = expr.args.map { |arg| compile_expr(arg) }
         lambda do |ctx|
-          compile_call(fn_name, args, ctx)
+          compile_call(fn_name, args, ctx, source_loc: expr.loc)
         end
 
       when Syntax::Expressions::CascadeExpression
@@ -69,19 +69,13 @@ module TraitEngine
           "Key '#{field_name}' not found in context. Available keys: #{ctx.keys.join(", ")}"
         )
 
-        error.metadata = {
-          field_name: field_name,
-          defined_at: source_loc,
-          available_keys: ctx.keys
-        }
-
         raise error
       end
     end
 
-    def compile_call(fn_name, args, ctx)
+    def compile_call(fn_name, args, ctx, source_loc: nil)
       fn = TraitEngine::MethodCallRegistry.fetch(fn_name)
-      raise Errors::RuntimeError, "Function '#{fn_name}' not found" unless fn
+      raise Errors::RuntimeError, "Function fn(:#{fn_name}) not found" unless fn
 
       # Call the function with the provided context and arguments
       arg_values = args.map { |arg| arg.call(ctx) }
@@ -90,14 +84,7 @@ module TraitEngine
         fn.call(*arg_values)
       rescue StandardError => e
         # Wrap the error with context information
-        error = Errors::RuntimeError.new("Error calling '#{fn_name}': #{e.message}")
-        error.metadata = {
-          function_name: fn_name,
-          arguments: arg_values,
-          context: ctx,
-          original_error: e
-        }
-        raise error
+        raise Errors::RuntimeError.new("Error calling fn(:#{fn_name}): #{e.message}")
       end
     end
   end

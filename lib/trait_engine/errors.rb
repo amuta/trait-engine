@@ -23,16 +23,6 @@ module TraitEngine
 
     class SyntaxError < LocatedError; end
 
-    class RuntimeError < Error
-      attr_accessor :metadata
-
-      def detailed_message
-        msg = message
-        if metadata && metadata[:defined_at]
-          msg += "\n  Defined at: #{metadata[:defined_at].file}:#{metadata[:defined_at].line}"
-        end
-        msg
-      end
-    end
+    class RuntimeError < Error; end
   end
 end
