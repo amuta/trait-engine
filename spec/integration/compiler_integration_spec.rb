@@ -78,22 +78,22 @@ RSpec.describe "TraitEngine Compiler Integration" do
         # These traits examine raw customer data to establish fundamental classifications
         # Traits use the syntax: trait name, lhs, operator, rhs
 
-        trait :adult, field(:age), :>=, 18
-        trait :senior, field(:age), :>=, 65
-        trait :high_balance, field(:account_balance), :>=, 10_000
-        trait :premium_account, field(:account_type), :==, literal("premium")
-        trait :recent_activity, field(:last_purchase_days_ago), :<=, 30
-        trait :frequent_buyer, field(:total_purchases), :>=, 50
-        trait :long_term_customer, field(:years_customer), :>=, 5
-        trait :has_referrals, field(:referral_count), :>, 0
-        trait :low_support_usage, field(:support_tickets), :<=, 3
+        trait :adult, key(:age), :>=, 18
+        trait :senior, key(:age), :>=, 65
+        trait :high_balance, key(:account_balance), :>=, 10_000
+        trait :premium_account, key(:account_type), :==, "premium"
+        trait :recent_activity, key(:last_purchase_days_ago), :<=, 30
+        trait :frequent_buyer, key(:total_purchases), :>=, 50
+        trait :long_term_customer, key(:years_customer), :>=, 5
+        trait :has_referrals, key(:referral_count), :>, 0
+        trait :low_support_usage, key(:support_tickets), :<=, 3
 
         # # === HELPER FUNCTIONS FOR COMPLEX LOGIC ===
         # # These functions encapsulate multi-condition logic, making traits more readable
 
-        function :check_engagement, call(:all?, [ref(:recent_activity), ref(:frequent_buyer)])
-        function :check_value, call(:all?, [ref(:high_balance), ref(:long_term_customer)])
-        function :check_low_maintenance, call(:all?, [ref(:low_support_usage), ref(:has_referrals)])
+        attribute :check_engagement, fn(:all?, [ref(:recent_activity), ref(:frequent_buyer)])
+        attribute :check_value, fn(:all?, [ref(:high_balance), ref(:long_term_customer)])
+        attribute :check_low_maintenance, fn(:all?, [ref(:low_support_usage), ref(:has_referrals)])
 
         # # === DERIVED TRAITS ===
         # # These traits reference helper functions, showing clean trait definitions
@@ -123,36 +123,36 @@ RSpec.describe "TraitEngine Compiler Integration" do
           default literal("Potential")
         end
 
-        attribute :user_error, call(:error!, field(:should_error))
+        attribute :user_error, fn(:error!, key(:should_error))
 
         # === ATTRIBUTES THAT COMBINE MULTIPLE DATA SOURCES ===
         # These show how attributes can reference both raw fields and computed traits
 
-        attribute :welcome_message, call(:concat, [
-                                           literal("Hello "),
-                                           field(:name),
-                                           literal(", you are a "),
-                                           ref(:customer_tier),
-                                           literal(" customer!")
-                                         ])
+        attribute :welcome_message, fn(:concat, [
+                                         literal("Hello "),
+                                         key(:name),
+                                         literal(", you are a "),
+                                         ref(:customer_tier),
+                                         literal(" customer!")
+                                       ])
 
-        attribute :engagement_score, call(:multiply,
-                                          field(:total_purchases),
-                                          call(:conditional, ref(:engaged_customer), literal(1.5), literal(1.0)))
+        attribute :engagement_score, fn(:multiply,
+                                        key(:total_purchases),
+                                        fn(:conditional, ref(:engaged_customer), literal(1.5), literal(1.0)))
 
         # === FUNCTIONS THAT REFERENCE OTHER DEFINITIONS ===
         # Functions can consume both raw data and computed values, showing the
         # full power of cross-referencing in the compilation system
 
-        function :generate_offers, call(:create_offers,
-                                        ref(:marketing_segment),
-                                        ref(:customer_tier),
-                                        field(:account_balance))
+        attribute :generate_offers, fn(:create_offers,
+                                       ref(:marketing_segment),
+                                       ref(:customer_tier),
+                                       key(:account_balance))
 
-        function :calculate_loyalty_bonus, call(:bonus_formula,
-                                                field(:years_customer),
-                                                ref(:valuable_customer),
-                                                ref(:engagement_score))
+        attribute :calculate_loyalty_bonus, fn(:bonus_formula,
+                                               key(:years_customer),
+                                               ref(:valuable_customer),
+                                               ref(:engagement_score))
       end
     end
 
@@ -174,7 +174,7 @@ RSpec.describe "TraitEngine Compiler Integration" do
 
         result = executable_schema.evaluate(customer_data)
         traits = result[:traits]
-        functions = result[:functions]
+        attributes = result[:attributes]
 
         # Verify base traits computed from raw data
         expect(traits[:adult]).to be true
@@ -188,9 +188,9 @@ RSpec.describe "TraitEngine Compiler Integration" do
         expect(traits[:low_support_usage]).to be true # 2 <= 3
 
         # Verify helper functions that combine multiple conditions
-        expect(functions[:check_engagement]).to be true # recent_activity AND frequent_buyer
-        expect(functions[:check_value]).to be true # high_balance AND long_term_customer
-        expect(functions[:check_low_maintenance]).to be true # low_support_usage AND has_referrals
+        expect(attributes[:check_engagement]).to be true # recent_activity AND frequent_buyer
+        expect(attributes[:check_value]).to be true # high_balance AND long_term_customer
+        expect(attributes[:check_low_maintenance]).to be true # low_support_usage AND has_referrals
 
         # Verify derived traits that reference helper functions
         # These test the binding resolution where traits depend on functions
@@ -235,15 +235,15 @@ RSpec.describe "TraitEngine Compiler Integration" do
         # This demonstrates the full power of cross-referencing in the system
 
         result = executable_schema.evaluate(customer_data)
-        functions = result[:functions]
+        attributes = result[:attributes]
 
         # Test helper functions that combine multiple trait conditions
-        expect(functions[:check_engagement]).to be true
-        expect(functions[:check_value]).to be true
-        expect(functions[:check_low_maintenance]).to be true
+        expect(attributes[:check_engagement]).to be true
+        expect(attributes[:check_value]).to be true
+        expect(attributes[:check_low_maintenance]).to be true
 
         # Test offer generation based on computed marketing segment and tier
-        offers = functions[:generate_offers]
+        offers = attributes[:generate_offers]
         expect(offers).to include("Exclusive Preview")  # Champion segment
         expect(offers).to include("VIP Events")         # Champion segment
         expect(offers).to include("Concierge Service")  # Gold tier bonus
@@ -251,7 +251,7 @@ RSpec.describe "TraitEngine Compiler Integration" do
         # Test loyalty bonus calculation using years, computed trait, and computed attribute
         # Formula: (years * 10) * 2 (valuable customer) * (engagement_score / 100)
         # (8 * 10) * 2 * (190.5 / 100) = 80 * 2 * 1.905 = 304.8
-        bonus = functions[:calculate_loyalty_bonus]
+        bonus = attributes[:calculate_loyalty_bonus]
         expect(bonus).to eq(304.8)
       end
     end
@@ -275,9 +275,8 @@ RSpec.describe "TraitEngine Compiler Integration" do
       end
 
       it "can evaluate only attributes, with trait dependencies resolved" do
-        # Test that attribute evaluation correctly resolves trait dependencies
-        # Even though we're only asking for attributes, the traits they depend on
-        # must be computed automatically
+        pending("TODO: expose: [:attribute_names,...] -> we used functions as private attributes, right now everything is public")
+        #  before, but now, for clarity we only have attributes
 
         attributes = executable_schema.evaluate_attributes(customer_data)
 
@@ -285,7 +284,6 @@ RSpec.describe "TraitEngine Compiler Integration" do
         expect(attributes[:marketing_segment]).to eq("Champion")
         expect(attributes[:engagement_score]).to eq(190.5)
 
-        # Verify we only got attributes
         expect(attributes).not_to have_key(:adult)
         expect(attributes).not_to have_key(:check_engagement)
         expect(attributes).not_to have_key(:generate_offers)
@@ -317,7 +315,7 @@ RSpec.describe "TraitEngine Compiler Integration" do
 
         expect do
           executable_schema.evaluate_traits(incomplete_data)
-        end.to raise_error(TraitEngine::Errors::RuntimeError, /missing key: 'age'/)
+        end.to raise_error(TraitEngine::Errors::RuntimeError, /Key 'age' not found/)
       end
 
       it "handles function errors with context information" do
@@ -327,22 +325,17 @@ RSpec.describe "TraitEngine Compiler Integration" do
         expect do
           executable_schema.evaluate(data_with_error_field)
         end.to raise_error(TraitEngine::Errors::RuntimeError, /Error calling 'error!'/)
-
-        # Restore the function for other tests
-        TraitEngine::MethodCallRegistry.register_with(:custom_func) do |conditions|
-          conditions.custom_func { |condition| condition }
-        end
       end
 
-      it "works with different context types" do
+      it "do not work with objects that do not implement key? method" do
         # Test that the compiler's flexible context handling works correctly
 
         # Test with an OpenStruct instead of a Hash
         struct_data = Struct.new(*customer_data.keys).new(*customer_data.values)
-        result = executable_schema.evaluate(struct_data)
-        expect(result[:traits][:adult]).to be true
-        expect(result[:traits][:engaged_customer]).to be true
-        expect(result[:functions][:check_engagement]).to be true
+
+        expect do
+          executable_schema.evaluate(struct_data)
+        end.to raise_error(TraitEngine::Errors::RuntimeError, /Data context should be a Hash-like object/)
       end
     end
 

@@ -11,7 +11,7 @@ module TraitEngine
 
       attr_reader :cases, :default
 
-      def_delegators :@context, :ref, :literal, :field, :call
+      def_delegators :@context, :ref, :literal, :key, :fn
 
       def initialize(context, loc)
         @context = context
@@ -26,7 +26,7 @@ module TraitEngine
 
       def on_traits(*trait_names, expr)
         loc = @context.send(:current_location)
-        condition = call(:all?, trait_names.map { |name| ref(name) })
+        condition = fn(:all?, trait_names.map { |name| ref(name) })
         result    = @context.send(:ensure_syntax, expr, loc)
         @cases << WhenCaseExpression.new(condition, result)
       end

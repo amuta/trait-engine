@@ -68,20 +68,7 @@ module TraitEngine
         @traits << node
       end
 
-      def function(name, call_expr)
-        loc = current_location
-        validate_name(name, :function, loc)
-        unless call_expr.is_a?(CallExpression)
-          raise_error("must be defined with a `call(...)`, got #{call_expr.class}",
-                      loc)
-        end
-
-        node = Function.new(name, call_expr)
-        node.loc = loc
-        @functions << node
-      end
-
-      def field(name)
+      def key(name)
         node = Field.new(name)
         node.loc = current_location
         node
@@ -99,7 +86,7 @@ module TraitEngine
         node
       end
 
-      def call(fn_name, *args)
+      def fn(fn_name, *args)
         loc = current_location
         expr_args = args.map { |a| ensure_syntax(a, loc) }
         node = CallExpression.new(fn_name, expr_args)

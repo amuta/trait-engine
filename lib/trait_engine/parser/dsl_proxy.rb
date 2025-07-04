@@ -2,8 +2,8 @@ module TraitEngine
   module Parser
     class DslProxy
       DSL_METHODS = %i[
-        attribute attribute_cascade trait function
-        field ref literal call
+        attribute attribute_cascade trait
+        key ref literal fn
       ].freeze
 
       def initialize(context)
@@ -12,7 +12,7 @@ module TraitEngine
 
       DSL_METHODS.each do |meth|
         define_method(meth) do |*args, &blk|
-          # grab exactly where the user invoked `attribute`, `call`, etc.
+          # grab exactly where the user invoked `attribute`, `fn`, etc.
           c = caller_locations(1, 1).first
           @context.last_loc = Syntax::Location.new(
             file: c.path,

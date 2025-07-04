@@ -10,7 +10,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
     let(:subject) { described_class }
     it "can define attributes" do
       schema = build_schema do
-        attribute :name, field(:first_name)
+        attribute :name, key(:first_name)
       end
 
       expect(schema.attributes.size).to eq(1)
@@ -22,7 +22,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
 
     it "can define traits" do
       schema = build_schema do
-        trait :vip, field(:status), :==, literal("VIP")
+        trait :vip, key(:status), :==, literal("VIP")
       end
 
       expect(schema.traits.size).to eq(1)
@@ -36,42 +36,28 @@ RSpec.describe TraitEngine::Parser::Dsl do
       expect(trait.expression.args.last).to be_a(TraitEngine::Syntax::TerminalExpressions::Literal)
     end
 
-    it "can define functions" do
+    it "can define multiple attributes, traits" do
       schema = build_schema do
-        function :calculate_discount, call(:discount, field(:amount))
+        attribute :name, key(:first_name)
+        attribute :age, key(:birth_date)
+
+        trait :adult, key(:age), :>=, 18
+        trait :senior, key(:age), :>=, 65
+
+        attribute :greet, fn(:hello, key(:name))
       end
 
-      expect(schema.functions.size).to eq(1)
-      function = schema.functions.first
-      expect(function).to be_a(TraitEngine::Syntax::Declarations::Function)
-      expect(function.name).to eq(:calculate_discount)
-      expect(function.expression).to be_a(TraitEngine::Syntax::Expressions::CallExpression)
-      expect(function.expression.fn_name).to eq(:discount)
-      expect(function.expression.args.size).to eq(1)
-      expect(function.expression.args.first).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
-    end
-
-    it "can define multiple attributes, traits, and functions" do
-      schema = build_schema do
-        attribute :name, field(:first_name)
-        attribute :age, field(:birth_date)
-
-        trait :adult, field(:age), :>=, 18
-        trait :senior, field(:age), :>=, 65
-
-        function :greet, call(:hello, field(:name))
-      end
-
-      expect(schema.attributes.size).to eq(2)
+      expect(schema.attributes.size).to eq(3)
       expect(schema.traits.size).to eq(2)
-      expect(schema.functions.size).to eq(1)
 
-      expect(schema.attributes.map(&:name)).to contain_exactly(:name, :age)
+      expect(schema.attributes.map(&:name)).to contain_exactly(:name, :age, :greet)
       expect(schema.traits.map(&:name)).to contain_exactly(:adult, :senior)
-      expect(schema.functions.map(&:name)).to contain_exactly(:greet)
 
-      expect(schema.attributes.map { |attr| attr.expression.name }).to contain_exactly(:first_name, :birth_date)
-      expect(schema.attributes.map { |attr| attr.expression }).to all(be_a(TraitEngine::Syntax::TerminalExpressions::Field))
+      expect(schema.attributes.map { |attr| attr.expression.class }).to contain_exactly(
+        TraitEngine::Syntax::TerminalExpressions::Field,
+        TraitEngine::Syntax::TerminalExpressions::Field,
+        TraitEngine::Syntax::Expressions::CallExpression
+      )
 
       expect(schema.traits.map(&:expression)).to all(be_a(TraitEngine::Syntax::Expressions::CallExpression))
       expect(schema.traits.map(&:expression).map(&:fn_name)).to contain_exactly(:>=, :>=)
@@ -80,11 +66,6 @@ RSpec.describe TraitEngine::Parser::Dsl do
         be_a(TraitEngine::Syntax::TerminalExpressions::Literal),
         be_a(TraitEngine::Syntax::TerminalExpressions::Literal)
       )
-
-      expect(schema.functions.map(&:expression)).to all(be_a(TraitEngine::Syntax::Expressions::CallExpression))
-      expect(schema.functions.map(&:expression).map(&:fn_name)).to contain_exactly(:hello)
-      expect(schema.functions.map(&:expression).flat_map(&:args)).to all(be_a(TraitEngine::Syntax::TerminalExpressions::Field))
-      expect(schema.functions.map(&:expression).flat_map(&:args).map(&:name)).to contain_exactly(:name)
     end
   end
 
@@ -95,7 +76,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
       it "raises an error if an attribute name is not a symbol" do
         expect do
           build_schema do
-            attribute "name_string", field(:first_name)
+            attribute "name_string", key(:first_name)
           end
         end.to raise_error(error_class, /The name for 'attribute' must be a Symbol, got String/)
       end
@@ -103,17 +84,9 @@ RSpec.describe TraitEngine::Parser::Dsl do
       it "raises an error if a trait name is not a symbol" do
         expect do
           build_schema do
-            trait "not_a_symbol", field(:age), :<, 18
+            trait "not_a_symbol", key(:age), :<, 18
           end
         end.to raise_error(error_class, /The name for 'trait' must be a Symbol, got String/)
-      end
-
-      it "raises an error if a function name is not a symbol" do
-        expect do
-          build_schema do
-            function "not_a_symbol", call(:foo)
-          end
-        end.to raise_error(error_class, /The name for 'function' must be a Symbol, got String/)
       end
     end
 
@@ -139,7 +112,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
       it "raises an error if the operator is not a symbol" do
         expect do
           build_schema do
-            trait :is_minor, field(:age), "not_a_symbol", 18
+            trait :is_minor, key(:age), "not_a_symbol", 18
           end
         end.to raise_error(error_class, /expects a symbol for an operator, got String/)
       end
@@ -147,7 +120,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
       it "raises an error if the operator is not supported" do
         expect do
           build_schema do
-            trait :unsupported, field(:value), :>>, 42
+            trait :unsupported, key(:value), :>>, 42
           end
         end.to raise_error(error_class, /unsupported operator `>>`/)
       end
@@ -155,19 +128,9 @@ RSpec.describe TraitEngine::Parser::Dsl do
       it "raises an error if a trait has an invalid expression size" do
         expect do
           build_schema do
-            trait :invalid_trait, field(:value), :==
+            trait :invalid_trait, key(:value), :==
           end
         end.to raise_error(error_class, /trait 'invalid_trait' requires exactly 3 arguments: lhs, operator, and rhs/)
-      end
-    end
-
-    context "when defining functions" do
-      it "raises an error if the expression is not a call" do
-        expect do
-          build_schema do
-            function :my_func, ref(:some_other_func)
-          end
-        end.to raise_error(error_class, /must be defined with a `call\(\.\.\.\)`/)
       end
     end
 
@@ -175,7 +138,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
       it "raises an error for unknown expression types in a call" do
         expect do
           build_schema do
-            function :my_func, call(:foo, self)
+            attribute :my_attr, fn(:foo, self)
           end
         end.to raise_error(error_class, /Invalid expression/)
       end
@@ -183,7 +146,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
       it "raises an error for unsupported operators" do
         expect do
           build_schema do
-            trait :unsupported, field(:value), :>>, 42
+            trait :unsupported, key(:value), :>>, 42
           end
         end.to raise_error(error_class, /unsupported operator `>>`/)
       end
@@ -197,22 +160,19 @@ RSpec.describe TraitEngine::Parser::Dsl do
       expect(klass).to respond_to(:schema)
     end
 
-    it "builds a Syntax::Schema populated by attributes, traits, and functions" do
+    it "builds a Syntax::Schema populated by attributes, traits" do
       schema = klass.schema do
-        attribute :name, field(:first_name)
-        trait     :adult, field(:age), :>=, 18
-        function  :greet, call(:hello, field(:name))
+        attribute :name, key(:first_name)
+        trait     :adult, key(:age), :>=, 18
       end
 
       expect(schema).to be_a(TraitEngine::Syntax::Schema)
       expect(schema.attributes.map(&:name)).to    contain_exactly(:name)
       expect(schema.traits.map(&:name)).to        contain_exactly(:adult)
-      expect(schema.functions.map(&:name)).to     contain_exactly(:greet)
 
       # Spot‐check internals
       expect(schema.attributes.first.expression.name).to eq(:first_name)
-      expect(schema.traits.first.expression.fn_name).to     eq(:>=)
-      expect(schema.functions.first.expression.fn_name).to  eq(:hello)
+      expect(schema.traits.first.expression.fn_name).to eq(:>=)
     end
 
     describe "error propagation from within a class" do
@@ -233,7 +193,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
     context "attribute" do
       it "accepts <symbol>, <expression>" do
         schema = build_schema do
-          attribute :name, field(:first_name)
+          attribute :name, key(:first_name)
         end
 
         expect(schema.attributes.size).to eq(1)
@@ -244,7 +204,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
       it "accepts <symbol> with a block" do
         schema = build_schema do
           attribute :status do
-            on_trait :active, field(:active)
+            on_trait :active, key(:active)
           end
         end
 
@@ -269,9 +229,9 @@ RSpec.describe TraitEngine::Parser::Dsl do
         let(:schema) do
           build_schema do
             attribute :status do
-              on_trait :active, field(:active)
-              on_traits :verified, field(:verified)
-              default field(:default_status)
+              on_trait :active, key(:active)
+              on_traits :verified, key(:verified)
+              default key(:default_status)
             end
           end
         end

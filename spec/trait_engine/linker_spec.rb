@@ -17,10 +17,9 @@ RSpec.describe TraitEngine::Linker do
     context "with a valid schema" do
       it "returns the schema unchanged" do
         schema = dsl.schema do
-          attribute :name, field(:first_name)
-          trait     :adult,  field(:age),   :>=, 18
-          function  :greet,  call(:hello,   field(:name))
-          attribute :list,   [literal(1),   literal(2)]
+          attribute :name, key(:first_name)
+          trait     :adult,  key(:age), :>=, 18
+          attribute :list,   [literal(1), literal(2)]
         end
 
         expect { described_class.link!(schema) }.not_to raise_error
@@ -43,8 +42,8 @@ RSpec.describe TraitEngine::Linker do
 
       it "raises for two traits with the same name" do
         schema = dsl.schema do
-          trait :t1, field(:x), :==, 1
-          trait :t1, field(:y), :==, 2
+          trait :t1, key(:x), :==, 1
+          trait :t1, key(:y), :==, 2
         end
 
         expect do
@@ -53,10 +52,10 @@ RSpec.describe TraitEngine::Linker do
                            /duplicate definition of `t1`/)
       end
 
-      it "raises for two functions with the same name" do
+      it "raises for two attributes with the same name" do
         schema = dsl.schema do
-          function :f1, call(:foo, literal(1))
-          function :f1, call(:foo, literal(2))
+          attribute :f1, fn(:foo, literal(1))
+          attribute :f1, fn(:foo, literal(2))
         end
 
         expect do
@@ -68,7 +67,7 @@ RSpec.describe TraitEngine::Linker do
       it "raises when an attribute and a trait share the same name" do
         schema = dsl.schema do
           attribute :name, literal("x")
-          trait     :name, field(:name), :==, "x"
+          trait     :name, key(:name), :==, "x"
         end
 
         expect do
@@ -114,9 +113,9 @@ RSpec.describe TraitEngine::Linker do
                            /undefined reference to `missing`/)
       end
 
-      it "raises when a function's argument binds to an undefined name" do
+      it "raises when a attribute's argument binds to an undefined name" do
         schema = dsl.schema do
-          function :f2, call(:hello, ref(:baz))
+          attribute :f2, fn(:hello, ref(:baz))
         end
 
         expect do
@@ -190,7 +189,7 @@ RSpec.describe TraitEngine::Linker do
     context "cascade validation" do
       it "allows a cascade on a defined trait" do
         schema = dsl.schema do
-          trait :t1, field(:flag), :==, true
+          trait :t1, key(:flag), :==, true
 
           attribute :status do
             on_trait :t1, literal("ok")
@@ -210,7 +209,7 @@ RSpec.describe TraitEngine::Linker do
           .and_return(true)
 
         schema = dsl.schema do
-          trait :t1, field(:value), :bogus_op, 42
+          trait :t1, key(:value), :bogus_op, 42
         end
 
         expect do
@@ -224,7 +223,7 @@ RSpec.describe TraitEngine::Linker do
     it "raises SemanticError when trait uses operator with wrong arity" do
       # pretend :>= is supported but wrong-arity
       schema = dsl.schema do
-        trait :check, field(:age), :>=, 18 # this is fine
+        trait :check, key(:age), :>=, 18 # this is fine
       end
 
       # now mutate the AST to have 3 args:
@@ -243,7 +242,7 @@ RSpec.describe TraitEngine::Linker do
         .and_return(true)
 
       schema = dsl.schema do
-        trait :t1, field(:x), :bogus_op, literal(1)
+        trait :t1, key(:x), :bogus_op, literal(1)
       end
 
       expect do
@@ -258,7 +257,7 @@ RSpec.describe TraitEngine::Linker do
         .with(:>=).and_return({ arity: 2 })
 
       schema = dsl.schema do
-        trait :adult, field(:age), :>=, 18
+        trait :adult, key(:age), :>=, 18
       end
 
       expect { described_class.link!(schema) }.not_to raise_error
