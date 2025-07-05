@@ -2,7 +2,7 @@ require "forwardable"
 
 require_relative "../syntax/expressions"
 
-module TraitEngine
+module Kumi
   module Parser
     class DslCascadeBuilder
       include Syntax::Expressions

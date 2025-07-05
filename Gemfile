@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in trait_engine.gemspec
+# Specify your gem's dependencies in kumi.gemspec
 gemspec
 
 gem "rake", "~> 13.0"

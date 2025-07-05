@@ -1,4 +1,4 @@
-module TraitEngine
+module Kumi
   module MethodCallRegistry
     class UnknownMethodName < StandardError; end
 

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-RSpec.describe TraitEngine do
+RSpec.describe Kumi do
   it "has a version number" do
-    expect(TraitEngine::VERSION).not_to be nil
+    expect(Kumi::VERSION).not_to be nil
   end
 
   it "does something useful" do

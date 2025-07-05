@@ -1,4 +1,4 @@
-module TraitEngine
+module Kumi
   module Parser
     class DslProxy
       DSL_METHODS = %i[

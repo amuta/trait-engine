@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require_relative "lib/trait_engine/version"
+require_relative "lib/kumi/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "trait_engine"
-  spec.version = TraitEngine::VERSION
+  spec.name = "kumi"
+  spec.version = Kumi::VERSION
   spec.authors = ["André Muta"]
   spec.email = ["andremuta@gmail.com"]
 
   spec.summary       = "Declarative trait-driven attribute mapping DSL for Ruby."
-  spec.description   = "TraitEngine replaces nested if/else logic with a concise DSL that maps data sources \
+  spec.description   = "Kumi replaces nested if/else logic with a concise DSL that maps data sources \
                          to derived attributes using reusable traits, functions, and decision tables."
   spec.homepage      = "https://github.com/amuta/trait-engine"
   spec.license       = "MIT"
@@ -36,6 +36,7 @@ Gem::Specification.new do |spec|
 
   # Uncomment to register a new dependency of your gem
   # spec.add_dependency "example-gem", "~> 1.0"
+  spec.add_runtime_dependency "zeitwerk", "~> 2.6"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

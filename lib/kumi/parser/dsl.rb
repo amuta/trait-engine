@@ -2,7 +2,7 @@ require_relative "dsl_proxy"
 require_relative "dsl_builder_context"
 require_relative "../syntax/schema"
 
-module TraitEngine
+module Kumi
   module Parser
     module Dsl
       def self.build_schema(&block)
@@ -11,8 +11,7 @@ module TraitEngine
         proxy.instance_eval(&block)
         Syntax::Schema.new(
           context.attributes,
-          context.traits,
-          context.functions
+          context.traits
         )
       end
 
@@ -21,15 +20,15 @@ module TraitEngine
       end
 
       # –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-      # instance method for classes/modules that `extend TraitEngine::Parser::Dsl`
+      # instance method for classes/modules that `extend Kumi::Parser::Dsl`
       #
       #   class MyThing
-      #     extend TraitEngine::Parser::Dsl
+      #     extend Kumi::Parser::Dsl
       #     schema { … }
       #   end
       #
       def schema(&block)
-        @__schema__ = TraitEngine::Parser::Dsl.build_schema(&block)
+        @__schema__ = Kumi::Parser::Dsl.build_schema(&block)
       end
 
       def generated_schema

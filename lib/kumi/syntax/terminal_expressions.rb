@@ -1,6 +1,6 @@
 require_relative "node"
 
-module TraitEngine
+module Kumi
   module Syntax
     module TerminalExpressions
       # Leaf expressions that represent a value or reference and terminate a branch.

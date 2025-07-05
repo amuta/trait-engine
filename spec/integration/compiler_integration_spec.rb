@@ -1,36 +1,36 @@
 require "spec_helper"
-require "trait_engine/parser/dsl"
-require "trait_engine/linker"
-require "trait_engine/compiler"
+require "kumi/parser/dsl"
+require "kumi/linker"
+require "kumi/compiler"
 
-RSpec.describe "TraitEngine Compiler Integration" do
+RSpec.describe "Kumi Compiler Integration" do
   before(:all) do
     # Set up custom functions that our schema references
     # This shows how the function registry integrates with compiled schemas
 
-    TraitEngine::MethodCallRegistry.register_with(:all?) do |conditions|
+    Kumi::MethodCallRegistry.register_with(:all?) do |conditions|
       conditions.all? { |condition| condition }
     end
 
-    TraitEngine::MethodCallRegistry.register_with(:concat) do |*strings|
+    Kumi::MethodCallRegistry.register_with(:concat) do |*strings|
       strings.join
     end
 
-    TraitEngine::MethodCallRegistry.register_with(:multiply) do |a, b|
+    Kumi::MethodCallRegistry.register_with(:multiply) do |a, b|
       a * b
     end
 
-    TraitEngine::MethodCallRegistry.register_with(:conditional) do |condition, true_value, false_value|
+    Kumi::MethodCallRegistry.register_with(:conditional) do |condition, true_value, false_value|
       condition ? true_value : false_value
     end
 
-    TraitEngine::MethodCallRegistry.register_with(:error!) do |should_error|
+    Kumi::MethodCallRegistry.register_with(:error!) do |should_error|
       raise "ErrorInsideCustomFunction" if should_error
 
       "No Error"
     end
 
-    TraitEngine::MethodCallRegistry.register_with(:create_offers) do |segment, tier, balance|
+    Kumi::MethodCallRegistry.register_with(:create_offers) do |segment, tier, balance|
       base_offers = case segment
                     when "Champion" then ["Exclusive Preview", "VIP Events", "Personal Advisor"]
                     when "Loyal Customer" then ["Loyalty Rewards", "Member Discounts"]
@@ -45,7 +45,7 @@ RSpec.describe "TraitEngine Compiler Integration" do
       base_offers
     end
 
-    TraitEngine::MethodCallRegistry.register_with(:bonus_formula) do |years, is_valuable, engagement|
+    Kumi::MethodCallRegistry.register_with(:bonus_formula) do |years, is_valuable, engagement|
       base_bonus = years * 10
       base_bonus *= 2 if is_valuable
       (base_bonus * (engagement / 100.0)).round(2)
@@ -73,7 +73,7 @@ RSpec.describe "TraitEngine Compiler Integration" do
       # Notice how traits build on other traits, attributes reference multiple traits,
       # and functions consume both raw fields and computed attributes.
 
-      TraitEngine::Parser::Dsl.schema do
+      Kumi::Parser::Dsl.schema do
         # === BASE TRAITS ===
         # These traits examine raw customer data to establish fundamental classifications
         # Traits use the syntax: trait name, lhs, operator, rhs
@@ -163,8 +163,8 @@ RSpec.describe "TraitEngine Compiler Integration" do
       # 3. Compile into executable lambda functions
 
       parsed_schema = schema # Already parsed by the DSL
-      linked_schema = TraitEngine::Linker.link!(parsed_schema)
-      TraitEngine::Compiler.compile(linked_schema)
+      Kumi::Linker.link!(parsed_schema)
+      Kumi::Compiler.compile(parsed_schema)
     end
 
     describe "full schema evaluation" do
@@ -315,7 +315,7 @@ RSpec.describe "TraitEngine Compiler Integration" do
 
         expect do
           executable_schema.evaluate_traits(incomplete_data)
-        end.to raise_error(TraitEngine::Errors::RuntimeError, /Key 'age' not found/)
+        end.to raise_error(Kumi::Errors::RuntimeError, /Key 'age' not found/)
       end
 
       it "handles function errors with context information" do
@@ -324,7 +324,7 @@ RSpec.describe "TraitEngine Compiler Integration" do
         # Temporarily break a function to test error handling
         expect do
           executable_schema.evaluate(data_with_error_field)
-        end.to raise_error(TraitEngine::Errors::RuntimeError, /Error calling fn\(:error!\)/)
+        end.to raise_error(Kumi::Errors::RuntimeError, /Error calling fn\(:error!\)/)
       end
 
       it "do not work with objects that do not implement key? method" do
@@ -335,7 +335,7 @@ RSpec.describe "TraitEngine Compiler Integration" do
 
         expect do
           executable_schema.evaluate(struct_data)
-        end.to raise_error(TraitEngine::Errors::RuntimeError, /Data context should be a Hash-like object/)
+        end.to raise_error(Kumi::Errors::RuntimeError, /Data context should be a Hash-like object/)
       end
     end
 

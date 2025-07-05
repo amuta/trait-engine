@@ -2,11 +2,11 @@ require_relative "../syntax/declarations"
 require_relative "../syntax/expressions"
 require_relative "../syntax/terminal_expressions"
 require_relative "../syntax/node"
-require "trait_engine/errors"
-require "trait_engine/method_call_registry"
+require "kumi/errors"
+require "kumi/method_call_registry"
 require_relative "dsl_cascade_builder"
 
-module TraitEngine
+module Kumi
   module Parser
     class DslBuilderContext
       attr_accessor :last_loc
@@ -42,9 +42,8 @@ module TraitEngine
             ensure_syntax(expr, loc)
           end
 
-        node = Attribute.new(name, expr)
-        node.loc = loc
-        @attributes << node
+        binding.pry if expr.nil?
+        @attributes << Attribute.new(name, expr, loc: loc)
       end
 
       def trait(name, *expression)
@@ -61,37 +60,26 @@ module TraitEngine
 
         raise_error("unsupported operator `#{operator}`", loc) unless MethodCallRegistry.operator?(operator)
 
-        expr = CallExpression.new(operator, [ensure_syntax(lhs, loc), ensure_syntax(rhs, loc)])
-        expr.loc = loc
-        node = Trait.new(name, expr)
-        node.loc = loc
-        @traits << node
+        expr = CallExpression.new(operator, [ensure_syntax(lhs, loc), ensure_syntax(rhs, loc)], loc: loc)
+        @traits << Trait.new(name, expr, loc: loc)
       end
 
       def key(name)
-        node = Field.new(name)
-        node.loc = current_location
-        node
+        Field.new(name, loc: current_location)
       end
 
       def ref(name)
-        node = Binding.new(name)
-        node.loc = current_location
-        node
+        Binding.new(name, loc: current_location)
       end
 
       def literal(value)
-        node = Literal.new(value)
-        node.loc = current_location
-        node
+        Literal.new(value, loc: current_location)
       end
 
       def fn(fn_name, *args)
         loc = current_location
         expr_args = args.map { |a| ensure_syntax(a, loc) }
-        node = CallExpression.new(fn_name, expr_args)
-        node.loc = loc
-        node
+        CallExpression.new(fn_name, expr_args, loc: loc)
       end
 
       private
@@ -113,7 +101,7 @@ module TraitEngine
       end
 
       # def current_location
-      #   TraitEngine.current_location
+      #   Kumi.current_location
       # end
 
       def raise_error(message, location)

@@ -1,12 +1,7 @@
-require "trait_engine/errors"
-require "trait_engine/syntax/schema"
-require "trait_engine/syntax/declarations"
-require "trait_engine/syntax/expressions"
-require "trait_engine/syntax/terminal_expressions"
-require "trait_engine/method_call_registry"
-
-module TraitEngine
+module Kumi
   class Linker
+    attr_reader :schema, :dependency_graph
+
     def self.link!(schema)
       new(schema).link!
     end
@@ -15,6 +10,7 @@ module TraitEngine
       @schema = schema
       @names  = {}
       @dependency_graph = {}
+      @leaf_map = Hash.new { |h, k| h[k] = Set.new }
     end
 
     def link!
@@ -27,7 +23,11 @@ module TraitEngine
       # Pass 3: Detect cycles using the dependency graph built in pass 2
       detect_cycles
 
-      @schema
+      self
+    end
+
+    def leaf_fields(binding_name)
+      @leaf_map[binding_name].dup.freeze
     end
 
     private
@@ -41,7 +41,7 @@ module TraitEngine
     end
 
     def all_nodes
-      @schema.attributes + @schema.traits + @schema.functions
+      @schema.attributes + @schema.traits
     end
 
     def index_definitions
@@ -61,13 +61,15 @@ module TraitEngine
             # Validate binding exists
             err(node.loc, "undefined reference to `#{node.name}`") unless @names.key?(node.name)
             refs << node.name
-
+            # Track leaf fields for this binding
           when Syntax::Expressions::CallExpression
-            # Validate operators have correct arity
-            validate_operator_arity(node)
+          # Validate operators have correct arity
+          # validate_operator_arity(node)
+          when Syntax::TerminalExpressions::Field
+            @leaf_map[decl.name] << node.name      # collect leaves
+          when Syntax::TerminalExpressions::Literal
+            @leaf_map[decl.name] << node.value     # optional, keep literals
 
-            # NOTE: Function calls will be validated by binding validation
-            # since functions are indexed by name
           end
         end
 
@@ -114,7 +116,7 @@ module TraitEngine
 
       err(call_node.loc,
           "operator `#{op}` expects #{expected} arguments, got #{given}")
-    rescue TraitEngine::MethodCallRegistry::UnknownMethodName
+    rescue Kumi::MethodCallRegistry::UnknownMethodName
       err(call_node.loc, "unsupported operator `#{call_node.fn_name}`")
     end
 

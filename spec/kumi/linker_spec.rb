@@ -1,15 +1,15 @@
 require "spec_helper"
-require "trait_engine/parser/dsl"
-require "trait_engine/linker"
-require "trait_engine/errors"
+require "kumi/parser/dsl"
+require "kumi/linker"
+require "kumi/errors"
 
-RSpec.describe TraitEngine::Linker do
-  let(:dsl) { TraitEngine::Parser::Dsl }
+RSpec.describe Kumi::Linker do
+  let(:dsl) { Kumi::Parser::Dsl }
 
   before do
-    unless TraitEngine::MethodCallRegistry.supported?(:hello)
+    unless Kumi::MethodCallRegistry.supported?(:hello)
       hello_fn_lambda = ->(name) { "Hello, #{name}!" }
-      TraitEngine::MethodCallRegistry.register(:hello, hello_fn_lambda, arity: 1, types: [:any])
+      Kumi::MethodCallRegistry.register(:hello, hello_fn_lambda, arity: 1, types: [:any])
     end
   end
 
@@ -25,6 +25,21 @@ RSpec.describe TraitEngine::Linker do
         expect { described_class.link!(schema) }.not_to raise_error
         expect(described_class.link!(schema)).to be(schema)
       end
+
+      it "saves leaf nodes " do
+        schema = dsl.schema do
+          attribute :name2, ref(:name)
+          attribute :name, ref(:list2)
+          trait     :adult,  key(:age), :>=, 18
+          attribute :list,   [literal(1), literal(2), key(:my_name)]
+          attribute :list2 do
+            on_trait :adult, ref(:list)
+            default literal("default")
+          end
+        end
+
+        described_class.link!(schema)
+      end
     end
 
     context "duplicate definitions" do
@@ -36,7 +51,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /duplicate definition of `foo`/)
       end
 
@@ -48,7 +63,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /duplicate definition of `t1`/)
       end
 
@@ -60,19 +75,19 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /duplicate definition of `f1`/)
       end
 
       it "raises when an attribute and a trait share the same name" do
         schema = dsl.schema do
-          attribute :name, literal("x")
+          attribute :name, "x"
           trait     :name, key(:name), :==, "x"
         end
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /duplicate definition of `name`/)
       end
     end
@@ -85,7 +100,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /undefined reference to `bar`/)
       end
 
@@ -98,7 +113,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /undefined reference to `unknown_trait`/)
       end
 
@@ -109,7 +124,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /undefined reference to `missing`/)
       end
 
@@ -120,7 +135,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /undefined reference to `baz`/)
       end
 
@@ -131,7 +146,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /undefined reference to `x`/)
       end
     end
@@ -145,7 +160,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /cycle detected: a → b → a/)
       end
 
@@ -156,7 +171,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /cycle detected: a → a/)
       end
 
@@ -169,7 +184,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /cycle detected: a → b → c → a/)
       end
 
@@ -204,7 +219,7 @@ RSpec.describe TraitEngine::Linker do
     context "operator reference" do
       it "raises if a trait uses an unknown operator (DSL check skipped)" do
         # this allow is to avoid the parser breaking before the linker
-        allow(TraitEngine::MethodCallRegistry)
+        allow(Kumi::MethodCallRegistry)
           .to receive(:operator?)
           .and_return(true)
 
@@ -214,7 +229,7 @@ RSpec.describe TraitEngine::Linker do
 
         expect do
           described_class.link!(schema)
-        end.to raise_error(TraitEngine::Errors::SemanticError,
+        end.to raise_error(Kumi::Errors::SemanticError,
                            /unsupported operator `bogus_op`/)
       end
     end
@@ -227,17 +242,17 @@ RSpec.describe TraitEngine::Linker do
       end
 
       # now mutate the AST to have 3 args:
-      schema.traits.first.expression.args << TraitEngine::Syntax::TerminalExpressions::Literal.new(30)
+      schema.traits.first.expression.args << Kumi::Syntax::TerminalExpressions::Literal.new(30)
 
       expect do
         described_class.link!(schema)
-      end.to raise_error(TraitEngine::Errors::SemanticError,
+      end.to raise_error(Kumi::Errors::SemanticError,
                          /operator `>=` expects 2 arguments, got 3/)
     end
 
     it "raises SemanticError for an unknown operator" do
       # this allow is to avoid the parser breaking before the linker
-      allow(TraitEngine::MethodCallRegistry)
+      allow(Kumi::MethodCallRegistry)
         .to receive(:operator?)
         .and_return(true)
 
@@ -247,12 +262,12 @@ RSpec.describe TraitEngine::Linker do
 
       expect do
         described_class.link!(schema)
-      end.to raise_error(TraitEngine::Errors::SemanticError,
+      end.to raise_error(Kumi::Errors::SemanticError,
                          /unsupported operator `bogus_op`/)
     end
 
     it "allows correct-arity, supported operator" do
-      allow(TraitEngine::MethodCallRegistry)
+      allow(Kumi::MethodCallRegistry)
         .to receive(:signature)
         .with(:>=).and_return({ arity: 2 })
 

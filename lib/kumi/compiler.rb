@@ -1,4 +1,4 @@
-module TraitEngine
+module Kumi
   class Compiler
     def self.compile(schema)
       new(schema).compile
@@ -74,7 +74,7 @@ module TraitEngine
     end
 
     def compile_call(fn_name, args, ctx, source_loc: nil)
-      fn = TraitEngine::MethodCallRegistry.fetch(fn_name)
+      fn = Kumi::MethodCallRegistry.fetch(fn_name)
       raise Errors::RuntimeError, "Function fn(:#{fn_name}) not found" unless fn
 
       # Call the function with the provided context and arguments

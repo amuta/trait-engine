@@ -1,6 +1,6 @@
 require_relative "node"
 
-module TraitEngine
+module Kumi
   module Syntax
     module Expressions
       CallExpression = Struct.new(:fn_name, :args) do
@@ -15,7 +15,7 @@ module TraitEngine
 
       WhenCaseExpression = Struct.new(:condition, :result) do
         include Node
-        def children = condition.children + result.children
+        def children = [condition, result] + condition.children + result.children
       end
 
       ListExpression = Struct.new(:elements) do

@@ -1,6 +1,6 @@
 require_relative "node"
 
-module TraitEngine
+module Kumi
   module Syntax
     module Declarations
       Attribute = Struct.new(:name, :expression) do

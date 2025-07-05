@@ -1,7 +1,7 @@
 require "spec_helper"
-require "trait_engine/parser/dsl"
+require "kumi/parser/dsl"
 
-RSpec.describe TraitEngine::Parser::Dsl do
+RSpec.describe Kumi::Parser::Dsl do
   def build_schema(&block)
     subject.schema(&block)
   end
@@ -14,9 +14,9 @@ RSpec.describe TraitEngine::Parser::Dsl do
       end
 
       expect(schema.attributes.size).to eq(1)
-      expect(schema.attributes.first).to be_a(TraitEngine::Syntax::Declarations::Attribute)
+      expect(schema.attributes.first).to be_a(Kumi::Syntax::Declarations::Attribute)
       expect(schema.attributes.first.name).to eq(:name)
-      expect(schema.attributes.first.expression).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+      expect(schema.attributes.first.expression).to be_a(Kumi::Syntax::TerminalExpressions::Field)
       expect(schema.attributes.first.expression.name).to eq(:first_name)
     end
 
@@ -27,13 +27,13 @@ RSpec.describe TraitEngine::Parser::Dsl do
 
       expect(schema.traits.size).to eq(1)
       trait = schema.traits.first
-      expect(trait).to be_a(TraitEngine::Syntax::Declarations::Trait)
+      expect(trait).to be_a(Kumi::Syntax::Declarations::Trait)
       expect(trait.name).to eq(:vip)
-      expect(trait.expression).to be_a(TraitEngine::Syntax::Expressions::CallExpression)
+      expect(trait.expression).to be_a(Kumi::Syntax::Expressions::CallExpression)
       expect(trait.expression.fn_name).to eq(:==)
       expect(trait.expression.args.size).to eq(2)
-      expect(trait.expression.args.first).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
-      expect(trait.expression.args.last).to be_a(TraitEngine::Syntax::TerminalExpressions::Literal)
+      expect(trait.expression.args.first).to be_a(Kumi::Syntax::TerminalExpressions::Field)
+      expect(trait.expression.args.last).to be_a(Kumi::Syntax::TerminalExpressions::Literal)
     end
 
     it "can define multiple attributes, traits" do
@@ -54,23 +54,23 @@ RSpec.describe TraitEngine::Parser::Dsl do
       expect(schema.traits.map(&:name)).to contain_exactly(:adult, :senior)
 
       expect(schema.attributes.map { |attr| attr.expression.class }).to contain_exactly(
-        TraitEngine::Syntax::TerminalExpressions::Field,
-        TraitEngine::Syntax::TerminalExpressions::Field,
-        TraitEngine::Syntax::Expressions::CallExpression
+        Kumi::Syntax::TerminalExpressions::Field,
+        Kumi::Syntax::TerminalExpressions::Field,
+        Kumi::Syntax::Expressions::CallExpression
       )
 
-      expect(schema.traits.map(&:expression)).to all(be_a(TraitEngine::Syntax::Expressions::CallExpression))
+      expect(schema.traits.map(&:expression)).to all(be_a(Kumi::Syntax::Expressions::CallExpression))
       expect(schema.traits.map(&:expression).map(&:fn_name)).to contain_exactly(:>=, :>=)
       expect(schema.traits.map(&:expression).flat_map(&:args).to_set).to contain_exactly(
-        be_a(TraitEngine::Syntax::TerminalExpressions::Field),
-        be_a(TraitEngine::Syntax::TerminalExpressions::Literal),
-        be_a(TraitEngine::Syntax::TerminalExpressions::Literal)
+        be_a(Kumi::Syntax::TerminalExpressions::Field),
+        be_a(Kumi::Syntax::TerminalExpressions::Literal),
+        be_a(Kumi::Syntax::TerminalExpressions::Literal)
       )
     end
   end
 
   describe "schema validation" do
-    let(:error_class) { TraitEngine::Errors::SyntaxError }
+    let(:error_class) { Kumi::Errors::SyntaxError }
 
     context "when defining names" do
       it "raises an error if an attribute name is not a symbol" do
@@ -154,7 +154,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
   end
 
   context "Class extension" do
-    let(:klass) { Class.new { extend TraitEngine::Parser::Dsl } }
+    let(:klass) { Class.new { extend Kumi::Parser::Dsl } }
 
     it "adds a `schema` method to classes that extend the DSL" do
       expect(klass).to respond_to(:schema)
@@ -166,7 +166,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
         trait     :adult, key(:age), :>=, 18
       end
 
-      expect(schema).to be_a(TraitEngine::Syntax::Schema)
+      expect(schema).to be_a(Kumi::Syntax::Schema)
       expect(schema.attributes.map(&:name)).to    contain_exactly(:name)
       expect(schema.traits.map(&:name)).to        contain_exactly(:adult)
 
@@ -180,7 +180,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
       let(:line)         { 8 }
 
       it "raises a SyntaxError pointing at the fixture file and line" do
-        expect { load fixture_path }.to raise_error(TraitEngine::Errors::SyntaxError) { |error|
+        expect { load fixture_path }.to raise_error(Kumi::Errors::SyntaxError) { |error|
           expect(error.message).to match(
             /invalid_schema_class\.rb:#{line}: attribute 'name' requires an expression or a block/
           )
@@ -198,7 +198,7 @@ RSpec.describe TraitEngine::Parser::Dsl do
 
         expect(schema.attributes.size).to eq(1)
         expect(schema.attributes.first.name).to eq(:name)
-        expect(schema.attributes.first.expression).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+        expect(schema.attributes.first.expression).to be_a(Kumi::Syntax::TerminalExpressions::Field)
       end
 
       it "accepts <symbol> with a block" do
@@ -209,19 +209,19 @@ RSpec.describe TraitEngine::Parser::Dsl do
         end
 
         expect(schema.attributes.size).to eq(1)
-        expect(schema.attributes.first.expression).to be_a(TraitEngine::Syntax::Expressions::CascadeExpression)
+        expect(schema.attributes.first.expression).to be_a(Kumi::Syntax::Expressions::CascadeExpression)
         expect(schema.attributes.first.expression.cases.size).to eq(1)
         cases = schema.attributes.first.expression.cases
         expect(cases.size).to eq(1)
-        expect(cases.first).to be_a(TraitEngine::Syntax::Expressions::WhenCaseExpression)
-        expect(cases.first.condition).to be_a(TraitEngine::Syntax::Expressions::CallExpression)
+        expect(cases.first).to be_a(Kumi::Syntax::Expressions::WhenCaseExpression)
+        expect(cases.first.condition).to be_a(Kumi::Syntax::Expressions::CallExpression)
         expect(cases.first.condition.fn_name).to eq(:all?)
         expect(cases.first.condition.args.size).to eq(1)
-        expect(cases.first.condition.args.first).to be_a(TraitEngine::Syntax::Expressions::ListExpression)
+        expect(cases.first.condition.args.first).to be_a(Kumi::Syntax::Expressions::ListExpression)
         expect(cases.first.condition.args.first.elements.size).to eq(1)
-        expect(cases.first.condition.args.first.elements.first).to be_a(TraitEngine::Syntax::TerminalExpressions::Binding)
+        expect(cases.first.condition.args.first.elements.first).to be_a(Kumi::Syntax::TerminalExpressions::Binding)
         expect(cases.first.condition.args.first.elements.first.name).to eq(:active)
-        expect(cases.first.result).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+        expect(cases.first.result).to be_a(Kumi::Syntax::TerminalExpressions::Field)
         expect(cases.first.result.name).to eq(:active)
       end
 
@@ -241,38 +241,38 @@ RSpec.describe TraitEngine::Parser::Dsl do
         let(:default_case) { attribute_expr.cases[2] }
 
         it "creates a cascade expression with cases: whencases" do
-          expect(attribute_expr).to be_a(TraitEngine::Syntax::Expressions::CascadeExpression)
+          expect(attribute_expr).to be_a(Kumi::Syntax::Expressions::CascadeExpression)
           expect(attribute_expr.cases.size).to eq(3)
         end
 
         it "creates the first case with a condition and result" do
-          expect(first_case.condition).to be_a(TraitEngine::Syntax::Expressions::CallExpression)
+          expect(first_case.condition).to be_a(Kumi::Syntax::Expressions::CallExpression)
           expect(first_case.condition.fn_name).to eq(:all?)
           expect(first_case.condition.args.size).to eq(1)
-          expect(first_case.condition.args.first).to be_a(TraitEngine::Syntax::Expressions::ListExpression)
+          expect(first_case.condition.args.first).to be_a(Kumi::Syntax::Expressions::ListExpression)
           expect(first_case.condition.args.first.elements.size).to eq(1)
-          expect(first_case.condition.args.first.elements.first).to be_a(TraitEngine::Syntax::TerminalExpressions::Binding)
+          expect(first_case.condition.args.first.elements.first).to be_a(Kumi::Syntax::TerminalExpressions::Binding)
           expect(first_case.condition.args.first.elements.first.name).to eq(:active)
-          expect(first_case.result).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+          expect(first_case.result).to be_a(Kumi::Syntax::TerminalExpressions::Field)
           expect(first_case.result.name).to eq(:active)
         end
 
         it "creates the second case with a condition and result" do
-          expect(second_case.condition).to be_a(TraitEngine::Syntax::Expressions::CallExpression)
+          expect(second_case.condition).to be_a(Kumi::Syntax::Expressions::CallExpression)
           expect(second_case.condition.fn_name).to eq(:all?)
           expect(second_case.condition.args.size).to eq(1)
-          expect(second_case.condition.args.first).to be_a(TraitEngine::Syntax::Expressions::ListExpression)
+          expect(second_case.condition.args.first).to be_a(Kumi::Syntax::Expressions::ListExpression)
           expect(second_case.condition.args.first.elements.size).to eq(1)
-          expect(second_case.condition.args.first.elements.first).to be_a(TraitEngine::Syntax::TerminalExpressions::Binding)
+          expect(second_case.condition.args.first.elements.first).to be_a(Kumi::Syntax::TerminalExpressions::Binding)
           expect(second_case.condition.args.first.elements.first.name).to eq(:verified)
-          expect(second_case.result).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+          expect(second_case.result).to be_a(Kumi::Syntax::TerminalExpressions::Field)
           expect(second_case.result.name).to eq(:verified)
         end
 
         it "creates the default case with a condition and result" do
-          expect(default_case.condition).to be_a(TraitEngine::Syntax::TerminalExpressions::Literal)
+          expect(default_case.condition).to be_a(Kumi::Syntax::TerminalExpressions::Literal)
           expect(default_case.condition.value).to eq(true) # Always matches
-          expect(default_case.result).to be_a(TraitEngine::Syntax::TerminalExpressions::Field)
+          expect(default_case.result).to be_a(Kumi::Syntax::TerminalExpressions::Field)
           expect(default_case.result.name).to eq(:default_status)
         end
       end
