@@ -11,7 +11,8 @@ module Kumi
       :> => Entry.new(->(a, b) { a >  b }, 2, %i[numeric numeric]),
       :< => Entry.new(->(a, b) { a <  b }, 2, %i[numeric numeric]),
       :>= => Entry.new(->(a, b) { a >= b }, 2, %i[numeric numeric]),
-      :<= => Entry.new(->(a, b) { a <= b }, 2, %i[numeric numeric])
+      :<= => Entry.new(->(a, b) { a <= b }, 2, %i[numeric numeric]),
+      :add => Entry.new(->(a, b) { a + b }, 2, %i[numeric numeric])
     }
 
     @fn_proc = OPERATORS_PROCS.dup

@@ -1,11 +1,3 @@
-require_relative "../syntax/declarations"
-require_relative "../syntax/expressions"
-require_relative "../syntax/terminal_expressions"
-require_relative "../syntax/node"
-require "kumi/errors"
-require "kumi/method_call_registry"
-require_relative "dsl_cascade_builder"
-
 module Kumi
   module Parser
     class DslBuilderContext
@@ -112,10 +104,7 @@ module Kumi
         cascade_builder = DslCascadeBuilder.new(self, loc)
         cascade_builder.instance_eval(&blk)
 
-        expr = CascadeExpression.new(cascade_builder.cases)
-        expr.loc = loc
-
-        expr
+        CascadeExpression.new(cascade_builder.cases, loc: loc)
       end
 
       def current_location

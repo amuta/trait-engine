@@ -1,7 +1,3 @@
-require_relative "dsl_proxy"
-require_relative "dsl_builder_context"
-require_relative "../syntax/schema"
-
 module Kumi
   module Parser
     module Dsl

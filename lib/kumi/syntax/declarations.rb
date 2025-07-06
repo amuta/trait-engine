@@ -1,5 +1,3 @@
-require_relative "node"
-
 module Kumi
   module Syntax
     module Declarations
@@ -9,11 +7,6 @@ module Kumi
       end
 
       Trait = Struct.new(:name, :expression) do
-        include Node
-        def children = [expression]
-      end
-
-      Function = Struct.new(:name, :expression) do
         include Node
         def children = [expression]
       end

@@ -1,6 +1,3 @@
-require "spec_helper"
-require "kumi/parser/dsl"
-
 RSpec.describe Kumi::Parser::Dsl do
   def build_schema(&block)
     subject.schema(&block)
@@ -177,12 +174,12 @@ RSpec.describe Kumi::Parser::Dsl do
 
     describe "error propagation from within a class" do
       let(:fixture_path) { File.expand_path("../../fixtures/invalid_schema_class.rb", __dir__) }
-      let(:line)         { 8 }
+      let(:line)         { 6 }
 
       it "raises a SyntaxError pointing at the fixture file and line" do
         expect { load fixture_path }.to raise_error(Kumi::Errors::SyntaxError) { |error|
           expect(error.message).to match(
-            /invalid_schema_class\.rb:#{line}: attribute 'name' requires an expression or a block/
+            /invalid_schema_class.rb:#{line}: attribute 'name' requires an expression or a block/
           )
         }
       end

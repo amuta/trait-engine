@@ -1,5 +1,3 @@
-require "kumi/parser/dsl"
-
 class InvalidSchema
   extend Kumi::Parser::Dsl
 

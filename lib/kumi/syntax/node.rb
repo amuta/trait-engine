@@ -8,9 +8,9 @@ module Kumi
     module Node
       attr_accessor :loc
 
-      def initialize(*members, loc: nil)
+      def initialize(*args, loc: nil, **kwargs)
         @loc = loc
-        super(*members)
+        super(*args, **kwargs)
         freeze
       end
 

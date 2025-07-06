@@ -1,138 +1,161 @@
+# Kumi::Compiler
+#
+# RESPONSIBILITY
+#   • Turn a validated Schema + Analyzer result into executable lambdas.
+#   • Respect the Analyzer's topo_order so bindings are compiled once
+#     their dependencies are available.
+#
+# PUBLIC INTERFACE
+#   .compile(schema, analyzer:) → Kumi::ExecutableSchema
+
 module Kumi
   class Compiler
-    def self.compile(schema)
-      new(schema).compile
+    def self.compile(schema, analyzer:)
+      new(schema, analyzer).compile
     end
 
-    def initialize(schema)
-      @schema = schema
-      @bindings = {}
+    def initialize(schema, analyzer)
+      @schema   = schema
+      @analysis = analyzer     # Kumi::Analyzer::Result
+      @bindings = {}           # name → [:attr|:trait, lambda]
     end
 
     def compile
-      # Compile all declarations
-      @schema.attributes.each { |attr| @bindings[attr.name] = [:attr, compile_expr(attr.expression)] }
-      @schema.traits.each { |trait| @bindings[trait.name] = [:trait, compile_expr(trait.expression)] }
+      build_index
 
-      ExecutableSchema.new(@bindings)
+      @analysis.topo_order.each do |name|
+        decl = @index[name] || raise("Unknown binding #{name}")
+        compile_declaration(decl)
+      end
+
+      ExecutableSchema.new(@bindings.freeze)
     end
 
     private
 
+    def build_index
+      @index = {}
+      @schema.attributes.each { |a| @index[a.name] = a }
+      @schema.traits.each     { |t| @index[t.name] = t }
+    end
+
+    def compile_declaration(decl)
+      kind   = decl.is_a?(Kumi::Syntax::Trait) ? :trait : :attr
+      fn     = compile_expr(decl.expression)
+      @bindings[decl.name] = [kind, fn]
+    end
+
+    # Expression compiler returns a lambda(ctx) for every node
     def compile_expr(expr)
       case expr
-      when Syntax::TerminalExpressions::Literal
-        value = expr.value
-        ->(ctx) { value }
+      when Kumi::Syntax::Literal
+        v = expr.value
+        ->(_ctx) { v }
 
-      when Syntax::TerminalExpressions::Field
-        field = compile_field(expr)
+      when Kumi::Syntax::Field
+        compile_field(expr)
 
-      when Syntax::TerminalExpressions::Binding
+      when Kumi::Syntax::Binding
         name = expr.name
+        ->(ctx) { @bindings.fetch(name).last.call(ctx) }
+
+      when Kumi::Syntax::ListExpression
+        fns = expr.elements.map { |e| compile_expr(e) }
+        ->(ctx) { fns.map { |fn| fn.call(ctx) } }
+
+      when Kumi::Syntax::CallExpression
+        fn_name = expr.fn_name
+        arg_fns = expr.args.map { |a| compile_expr(a) }
+        ->(ctx) { invoke_function(fn_name, arg_fns, ctx, expr.loc) }
+
+      when Kumi::Syntax::CascadeExpression
+        pairs = expr.cases.map { |c| [compile_expr(c.condition), compile_expr(c.result)] }
         lambda { |ctx|
-          @bindings[name][1].call(ctx)
+          pairs.each { |cond, res| return res.call(ctx) if cond.call(ctx) }
+          nil
         }
 
-      when Syntax::Expressions::ListExpression
-        elements = expr.elements.map { |e| compile_expr(e) }
-        ->(ctx) { elements.map { |fn| fn.call(ctx) } }
-
-      when Syntax::Expressions::CallExpression
-        fn_name = expr.fn_name
-        args = expr.args.map { |arg| compile_expr(arg) }
-        lambda do |ctx|
-          compile_call(fn_name, args, ctx, source_loc: expr.loc)
-        end
-
-      when Syntax::Expressions::CascadeExpression
-        cases = expr.cases.map { |c| [compile_expr(c.condition), compile_expr(c.result)] }
-        lambda do |ctx|
-          cases.each { |cond, result| return result.call(ctx) if cond.call(ctx) }
-          nil
-        end
+      when Kumi::Syntax::WhenCaseExpression
+        raise "WhenCaseExpression should appear only inside CascadeExpression"
 
       else
-        raise "Unknown expression type: #{expr.class}"
+        raise "Unsupported expression node: #{expr.class}"
       end
     end
 
-    def compile_field(expr)
-      field_name = expr.name
-      source_loc = expr.loc
-
+    # Helpers
+    def compile_field(node)
+      name = node.name
+      loc  = node.loc
       lambda do |ctx|
-        return ctx[field_name] if ctx.key?(field_name)
+        next ctx[name] if ctx.respond_to?(:key?) && ctx.key?(name)
 
-        # Rich error with compilation context
-        error = Errors::RuntimeError.new(
-          "Key '#{field_name}' not found in context. Available keys: #{ctx.keys.join(", ")}"
-        )
-
-        raise error
+        raise Kumi::Errors::RuntimeError,
+              "Key '#{name}' not found at #{loc}. Available: #{ctx.respond_to?(:keys) ? ctx.keys.join(", ") : "N/A"}"
       end
     end
 
-    def compile_call(fn_name, args, ctx, source_loc: nil)
-      fn = Kumi::MethodCallRegistry.fetch(fn_name)
-      raise Errors::RuntimeError, "Function fn(:#{fn_name}) not found" unless fn
-
-      # Call the function with the provided context and arguments
-      arg_values = args.map { |arg| arg.call(ctx) }
-
-      begin
-        fn.call(*arg_values)
-      rescue StandardError => e
-        # Wrap the error with context information
-        raise Errors::RuntimeError.new("Error calling fn(:#{fn_name}): #{e.message}")
-      end
+    def invoke_function(name, arg_fns, ctx, loc)
+      fn = Kumi::MethodCallRegistry.fetch(name)
+      arg_values = arg_fns.map { |fn| fn.call(ctx) }
+      fn.call(*arg_values)
+    rescue StandardError => e
+      raise Kumi::Errors::RuntimeError,
+            "Error calling fn(:#{name}) at #{loc}: #{e.message}"
     end
   end
 
+  # Kumi::ExecutableSchema
+  #
+  # Exposes convenience helpers for evaluating subsets of bindings.
   class ExecutableSchema
-    def initialize(bindings)
-      @bindings = bindings
-    end
+    def initialize(bindings) = @bindings = bindings
 
+    # full evaluation
     def evaluate(data)
       {
-        attributes: evaluate_attributes(data),
-        traits: evaluate_traits(data)
+        traits: evaluate_traits(data),
+        attributes: evaluate_attributes(data)
       }
     end
 
-    def evaluate_traits(data)
-      validate_data(data)
-      trait_bindings.transform_values { |kind, fn| fn.call(data) }
-    end
+    # only traits
+    def traits(**data) = evaluate_traits(data)
 
-    def evaluate_attributes(data)
-      validate_data(data)
-      attribute_bindings.transform_values { |kind, fn| fn.call(data) }
-    end
+    # only attributes
+    def attributes(**data) = evaluate_attributes(data)
 
+    # single binding
     def evaluate_binding(name, data)
-      _, fn = @bindings[name]
-      raise Errors::RuntimeError, "No binding found: #{name}" unless fn
-
-      fn.call(data)
+      entry = @bindings[name] or
+        raise Kumi::Errors::RuntimeError, "No binding named #{name}"
+      entry.last.call(data)
     end
 
     private
 
-    def trait_bindings
-      @bindings.select { |_, v| v[0] == :trait }
+    def evaluate_traits(data)
+      validate_ctx(data)
+      filter_by(:trait).transform_values { |fn| fn.call(data) }
     end
 
-    def attribute_bindings
-      @bindings.select { |_, v| v[0] == :attr }
+    def evaluate_attributes(data)
+      validate_ctx(data)
+      filter_by(:attr).transform_values { |fn| fn.call(data) }
     end
 
-    def validate_data(data)
-      return if data.is_a? Hash
-      return if data.respond_to?(:key?) && data.respond_to?(:[])
+    def filter_by(kind)
+      @bindings.each_with_object({}) do |(k, (knd, fn)), h|
+        h[k] = fn if knd == kind
+      end
+    end
 
-      raise Errors::RuntimeError, "Data context should be a Hash-like object and respond to `:key?` and `:[]` methods."
+    def validate_ctx(ctx)
+      return if ctx.is_a?(Hash) ||
+                (ctx.respond_to?(:key?) && ctx.respond_to?(:[]))
+
+      raise Kumi::Errors::RuntimeError,
+            "Data context should be Hash-like (respond to :key? and :[])"
     end
   end
 end

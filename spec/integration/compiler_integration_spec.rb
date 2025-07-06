@@ -1,8 +1,3 @@
-require "spec_helper"
-require "kumi/parser/dsl"
-require "kumi/linker"
-require "kumi/compiler"
-
 RSpec.describe "Kumi Compiler Integration" do
   before(:all) do
     # Set up custom functions that our schema references
@@ -163,8 +158,8 @@ RSpec.describe "Kumi Compiler Integration" do
       # 3. Compile into executable lambda functions
 
       parsed_schema = schema # Already parsed by the DSL
-      Kumi::Linker.link!(parsed_schema)
-      Kumi::Compiler.compile(parsed_schema)
+      analyzer_result = Kumi::Analyzer.analyze!(parsed_schema)
+      Kumi::Compiler.compile(parsed_schema, analyzer: analyzer_result)
     end
 
     describe "full schema evaluation" do
@@ -261,7 +256,7 @@ RSpec.describe "Kumi Compiler Integration" do
         # Test that we can efficiently compute just the traits when that's all we need
         # This is important for performance in scenarios where you only need partial results
 
-        traits = executable_schema.evaluate_traits(customer_data)
+        traits = executable_schema.evaluate(customer_data)[:traits]
 
         expect(traits).to have_key(:adult)
         expect(traits).to have_key(:engaged_customer)
@@ -314,7 +309,7 @@ RSpec.describe "Kumi Compiler Integration" do
         incomplete_data = customer_data.except(:age)
 
         expect do
-          executable_schema.evaluate_traits(incomplete_data)
+          executable_schema.evaluate(incomplete_data)
         end.to raise_error(Kumi::Errors::RuntimeError, /Key 'age' not found/)
       end
 
@@ -335,7 +330,7 @@ RSpec.describe "Kumi Compiler Integration" do
 
         expect do
           executable_schema.evaluate(struct_data)
-        end.to raise_error(Kumi::Errors::RuntimeError, /Data context should be a Hash-like object/)
+        end.to raise_error(Kumi::Errors::RuntimeError, /Data context should be Hash-like/)
       end
     end
 

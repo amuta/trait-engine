@@ -1,5 +1,3 @@
-require_relative "node"
-
 module Kumi
   module Syntax
     module Expressions

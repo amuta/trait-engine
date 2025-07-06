@@ -1,7 +1,5 @@
 require "forwardable"
 
-require_relative "../syntax/expressions"
-
 module Kumi
   module Parser
     class DslCascadeBuilder
